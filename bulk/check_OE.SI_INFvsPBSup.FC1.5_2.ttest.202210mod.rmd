@@ -1,0 +1,509 @@
+---
+output: 
+  html_document: 
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+---
+
+# Overall Expression                
+
+##### check OE of 'SI_CON INF vs PBS up DEGs' on 'LI CON INF vs PBS'                             
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+#necessary packages and functions  
+source("I:/Shared_win/projects/RNA_normal/analysis.r")
+```
+
+```{r include=FALSE}
+proc_DEG <- function(deg, p.cut=0.05, FC.cut = 2, abs=TRUE,mat_cut=NULL){
+    rownames(deg) <- deg$gene
+    deg <- deg %>% filter(padj < p.cut)
+    if(abs==TRUE){
+        deg <- deg %>% filter(abs(FC) > FC.cut)
+    }else if(FC.cut >0){
+        deg <- deg %>% filter(FC > FC.cut)
+    }else{
+        deg <- deg %>% filter(FC < FC.cut)
+    }
+    
+    if(!is.null(mat_cut)){
+        deg <- deg[rownames(deg) %in% rownames(mat_cut),]
+    }
+    return(deg)
+}
+```
+
+
+## load datasets       
+
+### DEGs of 'SI_CON INF vs PBS'                                 
+
+```{r}
+DEG_SI.CTL_INFvsPBS <- read.table("./edgeR_DEGs.SI_SI_CTL_INF_vs_SI_CTL_PBS.csv", header = T, sep = ",")
+rownames(DEG_SI.CTL_INFvsPBS) <- DEG_SI.CTL_INFvsPBS$gene
+head(DEG_SI.CTL_INFvsPBS)
+```
+
+
+
+### filtered protein coding matrix        
+
+```{r}
+matt_pc <- read.table("../analysis_0814/RNAseq.SS2_HC_20210814.filt_tpm.pc_gene.csv",header = TRUE, sep = ",")
+rownames(matt_pc) <- matt_pc$gene
+matt_pc <- matt_pc[,2:ncol(matt_pc)]
+
+matt_pc.raw <- read.table("../analysis_0814/RNAseq.SS2_HC_20210814.raw_tpm.gene.csv",header = TRUE, sep = ",")
+rownames(matt_pc.raw) <- matt_pc.raw$gene
+matt_pc.raw <- matt_pc.raw[,2:ncol(matt_pc.raw)]
+
+
+idx.LI.CTL_INF <- grep("LI_CON_INF",colnames(matt_pc))
+idx.LI.CTL_PBS <- grep("LI_CON_PBS",colnames(matt_pc))
+idx.SI.CTL_INF <- grep("SI_CON_INF",colnames(matt_pc))
+idx.SI.CTL_PBS <- grep("SI_CON_PBS",colnames(matt_pc))
+
+idx.LI.CKO_INF <- grep("LI_CKO_INF",colnames(matt_pc))
+idx.SI.CKO_INF <- grep("SI_CKO_INF",colnames(matt_pc))
+```
+
+
+```{r}
+colnames(matt_pc)
+```
+
+
+
+```{r paged.print=FALSE}
+head(matt_pc[,c(idx.LI.CTL_INF,idx.LI.CTL_PBS)])
+```
+
+```{r paged.print=FALSE}
+head(matt_pc[,c(idx.SI.CTL_INF,idx.SI.CTL_PBS,idx.SI.CKO_INF)])
+```
+
+## comparison       
+
+### DEGs              
+
+#### p.adjust 0.05, FC 2        
+
+```{r include=FALSE}
+p.cut1 = 0.05
+FC.cut1 = 2
+DEG.up1 <- proc_DEG(DEG_SI.CTL_INFvsPBS, abs = FALSE, p.cut = p.cut1, FC.cut = FC.cut1)
+DEG.dn1 <- proc_DEG(DEG_SI.CTL_INFvsPBS, abs = FALSE, p.cut = p.cut1, FC.cut = -FC.cut1)
+```
+
+```{r echo=FALSE}
+cat("SI_CTL INF vs PBS \np.adjust< ",p.cut1,",FC< ",FC.cut1,"\nDEGs: ",length(c(DEG.up1$gene,DEG.dn1$gene)),
+    "\n  up: ",length(c(DEG.up1$gene)),
+    "\ndown: ",length(c(DEG.dn1$gene)))
+```
+
+```{r fig.height=5.2, fig.width=5.2, message=FALSE, warning=FALSE, include=FALSE}
+Aname="SI_CTL_INF"
+Bname="SI_CTL_PBS"
+
+rets1 <- finalplot(matt_pc.raw[,c(idx.SI.CTL_INF,idx.SI.CTL_PBS)],data.frame(DEG_SI.CTL_INFvsPBS), paste0(Aname,"_vs_",Bname), p.cut1, FC.cut1, 
+                  Sign = FALSE, Sign_dn = 25, Sign_up = 25, padjust = TRUE, Label = c(DEG.up1$gene[1:40],DEG.dn1$gene[1:40]))
+```
+
+```{r echo=FALSE, fig.height=12, fig.width=15, warning=FALSE}
+rets1$vol
+```
+
+##### heatmap using these DEGs          
+```{r echo=FALSE, fig.height=7.6, fig.width=7.2, message=FALSE, warning=FALSE}
+pheatmap(zscore_mat(log2(matt_pc[c(DEG.up1$gene,DEG.dn1$gene),]+1)),cluster_rows = T, cluster_cols = F,
+         #fontsize_row = 8,
+         show_rownames = F,
+         gaps_col = c(4,7,11,15,18),
+         #gaps_row = 40,
+         main = "SI_CON INF vs PBS DEGs zscore")
+
+```
+
+##### correlation using these DEGs          
+```{r echo=FALSE,message=FALSE,warning=FALSE,fig.width=5.8,fig.height=5.8}
+  Ret_mat <- log2(matt_pc[c(DEG.up1$gene,DEG.dn1$gene),
+                              ]+1)
+  Ret_cor <- cor(Ret_mat)
+  
+  lower = 0.75
+  upper = 1
+  pal <- "Reds"
+  
+  ht1 <- ComplexHeatmap::Heatmap(Ret_cor, col = circlize::colorRamp2(seq(lower, upper, ((upper-lower)/7)),RColorBrewer::brewer.pal(8, pal)),
+                  heatmap_legend_param = list(
+                  color_bar = "continuous",
+                  legend_direction = "horizontal",
+                  legend_width = unit(5, "cm"),
+                  title_position = "topcenter"),
+                  name = "Pearson correlation",
+                  column_names_gp = grid::gpar(fontsize = 10),
+                  row_names_gp = grid::gpar(fontsize = 10),
+                  top_annotation = NULL)
+  heatplot3 <- ComplexHeatmap::draw(ht1, heatmap_legend_side = "top")
+```
+
+
+#### p.adjust 0.01, FC 2        
+
+```{r include=FALSE}
+p.cut2 = 0.05
+FC.cut2 = 1.5
+DEG.up2 <- proc_DEG(DEG_SI.CTL_INFvsPBS, abs = FALSE, p.cut = p.cut2, FC.cut = FC.cut2)
+DEG.dn2 <- proc_DEG(DEG_SI.CTL_INFvsPBS, abs = FALSE, p.cut = p.cut2, FC.cut = -FC.cut2)
+```
+
+```{r echo=FALSE}
+cat("SI_CTL INF vs PBS \np.adjust< ",p.cut2,",FC< ",FC.cut2,"\nDEGs: ",length(c(DEG.up2$gene,DEG.dn2$gene)),
+    "\n  up: ",length(c(DEG.up2$gene)),
+    "\ndown: ",length(c(DEG.dn2$gene)))
+```
+
+```{r fig.height=5.2, fig.width=5.2, message=FALSE, warning=FALSE, include=FALSE}
+Aname="SI_CTL_INF"
+Bname="SI_CTL_PBS"
+
+rets2 <- finalplot(matt_pc.raw[,c(idx.SI.CTL_INF,idx.SI.CTL_PBS)],data.frame(DEG_SI.CTL_INFvsPBS), paste0(Aname,"_vs_",Bname), p.cut2, FC.cut2, 
+                  Sign = FALSE, Sign_dn = 25, Sign_up = 25, padjust = TRUE, Label = c(DEG.up2$gene[1:40],DEG.dn2$gene[1:40]))
+```
+
+```{r echo=FALSE, fig.height=12, fig.width=15, warning=FALSE}
+rets2$vol
+```
+           
+           
+##### heatmap using these DEGs         
+```{r echo=FALSE, fig.height=7.6, fig.width=7.2, message=FALSE, warning=FALSE}
+pheatmap(zscore_mat(log2(matt_pc[c(DEG.up2$gene,DEG.dn2$gene),]+1)),cluster_rows = T, cluster_cols = F,
+         #fontsize_row = 8,
+         show_rownames = F,
+         gaps_col = c(4,7,11,15,18),
+         #gaps_row = 40,
+         main = "SI_CON INF vs PBS DEGs zscore")
+
+```
+
+
+
+##### correlation using these DEGs          
+```{r echo=FALSE,message=FALSE,warning=FALSE,fig.width=5.8,fig.height=5.8}
+  Ret_mat <- log2(matt_pc[c(DEG.up2$gene,DEG.dn2$gene),
+                              ]+1)
+  Ret_cor <- cor(Ret_mat)
+  
+  lower = 0.75
+  upper = 1
+  pal <- "Reds"
+  
+  ht1 <- ComplexHeatmap::Heatmap(Ret_cor, col = circlize::colorRamp2(seq(lower, upper, ((upper-lower)/7)),RColorBrewer::brewer.pal(8, pal)),
+                  heatmap_legend_param = list(
+                  color_bar = "continuous",
+                  legend_direction = "horizontal",
+                  legend_width = unit(5, "cm"),
+                  title_position = "topcenter"),
+                  name = "Pearson correlation",
+                  column_names_gp = grid::gpar(fontsize = 10),
+                  row_names_gp = grid::gpar(fontsize = 10),
+                  top_annotation = NULL)
+  heatplot3 <- ComplexHeatmap::draw(ht1, heatmap_legend_side = "top")
+```
+
+## overall expression          
+
+##### SI_CON INF vs PBS DEGs, select INF up, calculate OE              
+
+```{r echo=FALSE, fig.height=3,fig.width=3}
+venn::venn(list(INFup_p0.05_FC1.5=c(DEG.up2$gene),
+                INFup_p0.05_FC2=c(DEG.up1$gene)),
+           zcolor = 'style', ilcs = 1, sncs = 0.75,
+           ggplot = T,) + 
+           labs( title="")+ 
+           theme(plot.title = element_text(size=2))
+```
+
+
+
+overall expression                
+
+```{r}
+
+get.semi.random.OE <- function(r,genes.dist.q,b.sign,num.rounds = 1000,full.flag = F){
+  # Previous name: get.random.sig.scores
+  
+  # sign.q : count signature genes located in some bins
+  sign.q<-as.matrix(table(genes.dist.q[b.sign]))
+  # q : located bins
+  q<-rownames(sign.q)
+  idx.all<-c()
+  B<-matrix(data = F,nrow = length(genes.dist.q),ncol = num.rounds)
+  Q<-matrix(data = 0,nrow = length(genes.dist.q),ncol = num.rounds)   # Q has nothing to do here
+  
+  # B each col is an index for same number of genes randomly selected in same bins 
+  for (i in 1:nrow(sign.q)){
+    num.genes<-sign.q[i]
+    if(num.genes>0){
+      # index of all genes in that bin (q[i])
+      idx<-which(is.element(genes.dist.q,q[i]))
+      for (j in 1:num.rounds){
+        idxj<-sample(idx,num.genes) 
+        Q[i,j]<-sum(B[idxj,j]==T)    # stupid Q, always zero matrix, waste of time to doubt it
+        B[idxj,j]<-T
+      }  
+    }
+  }
+  rand.scores<-apply(B,2,function(x) colMeans(r$zscores[x,]))   # get mean of 'zscore's of one round
+  if(full.flag){return(rand.scores)}
+  rand.scores<-rowMeans(rand.scores)  # get mean of num.rounds rounds
+  return(rand.scores)
+}
+
+# input   
+# mat_e : expression matrix(CPM/TPM)  
+# cells_s : cells_selected(character vector)  
+# path_n : pathway_names(character list,path_o="pathwah way")    
+# gene_sign : list(path_o=path_g)  
+#    (path_o : pathway_names in short)   
+#    (path_g : genes in this pathway, character vector)   
+# seed_r : random seed  
+
+# output list:  
+#   list$stat : table of pathway/expressed genes  
+# list$OE : OE of sorted cells  
+# list$mat_z : Zscore of sorted cells/genes
+# list$bar : bar plot  
+# list$heat : heat map  
+
+# mod and debug: 
+#   unit var names and align dimensions  
+# pheat(modified by UncleY with additional class 'pheatmap' and par 'silent=T')  
+# but still pheat object can't plot in rmd, just use 'silent=F' ~  
+
+easy_OE <- function(mat_e,cells_s,path_n,gene_sign,seed_r=7788){
+  
+  ret <- list()
+  ret$tpm <- log2(mat_e[,cells_s]+1)
+  ret$tpm <- ret$tpm[rowSums(ret$tpm)>0,]
+  ret$genes <- rownames(ret$tpm)
+  
+  #
+  set.seed(seed_r)
+  
+  ret$genes.mean <- rowMeans(ret$tpm)
+  ret$genes.sd <- apply(ret$tpm,1,sd)
+  ret$zscores <- sweep(ret$tpm,1,ret$genes.mean,FUN='-')
+  ret$zscores <- sweep(ret$zscores,1,ret$genes.sd,FUN='/')
+  
+  ret$genes.dist <- ret$genes.mean
+  ret$genes.dist.q <- discretize(ret$genes.dist, n.cat=50)
+  ret$sig.scores <- matrix(data=0,nrow=ncol(ret$tpm),ncol=length(gene_sign))
+  
+  ret$sig.names <- names(gene_sign)   # path_o
+  colnames(ret$sig.scores) <- ret$sig.names
+  rownames(ret$sig.scores) <- colnames(ret$tpm)
+  
+  ret$sig.scores.raw <- ret$sig.scores
+  ret$sig.rand.scores <- ret$sig.scores
+  
+  ret$mat_z <- list()
+  ret$heat <- list()
+  ret$bar <- list()
+  
+  ret$stat <- list()
+  
+  for(i in ret$sig.names){
+    b.sign <- is.element(ret$genes, gene_sign[[i]])
+    
+    # scores
+    ret$sig.rand.scores[,i] <- get.semi.random.OE(ret,ret$genes.dist.q,b.sign,num.rounds=100)
+    ret$sig.scores.raw[,i] <- colMeans(ret$zscores[b.sign,])
+    ret$sig.scores[,i] <- ret$sig.scores.raw[,i]-ret$sig.rand.scores[,i]
+    ret$sig.scores[,i] <- round(ret$sig.scores[,i],3)
+    # ret$sig.scores[,i] <- sort(ret$sig.scores[,i],decreasing=TRUE)
+    # here can't sort, could only sort numbers but no names sorted, sort in OE barplot
+    new_order <- order(ret$sig.scores[,i],decreasing = T)
+    
+    # OE barplot    
+    ret$bar[[i]] <- ggplot(data=cbind.data.frame(Score=(ret$sig.scores[,i])[new_order],
+                                                 Name=factor(names(ret$sig.scores[,i])[new_order],levels=(names(ret$sig.scores[,i]))[new_order])),
+                           mapping=aes(x=Score,y=Name)) +
+      geom_bar(stat='identity') +
+      #coord_flip() +
+      labs(y="",x=paste0("Overall Expression of geneset:\n",path_n[[i]]))
+    
+    # mat_z
+    ret$mat_z[[i]] <- zscore_mat(ret$zscores[b.sign,])
+    
+    # sort genes by mean value distance: mean(OE>0) - mean(OE<0) 
+    idx_cells.up <- names(ret$sig.scores[,i][ret$sig.scores[,i]>0])
+    idx_cells.down <- names(ret$sig.scores[,i][ret$sig.scores[,i]<0])
+    
+    idx_genes <- rowSums(ret$mat_z[[i]][,idx_cells.up])-rowSums(ret$mat_z[[i]][,idx_cells.down])
+    idx_genes <- sort(idx_genes,decreasing=TRUE)
+    
+    ret$mat_z[[i]] <- ret$mat_z[[i]][names(idx_genes),rev((names(ret$sig.scores[,i]))[new_order])]
+    
+    
+    # mat_z heatmap
+    ret$heat[[i]] <- pheatmap::pheatmap(t(t(ret$mat_z[[i]])), cluster_cols=FALSE,cluster_rows=FALSE,fontsize_row=2.5,
+                              main=paste0("Zscore of genes in geneset: \n",path_n[[i]]), border_color = NA,
+                              #color=colorRampPalette(c("blue","white","red"))(100), 
+                              color = color.test,
+                              show_rownames = T,
+                              breaks=seq(-2,2,0.04))
+    ret$heatl[[i]] <- pheatmap::pheatmap(log2(t(t( ret$tpm[rownames(ret$mat_z[[i]]),colnames(ret$mat_z[[i]])] ))+1), cluster_cols=FALSE,cluster_rows=FALSE,fontsize_row=2.5,
+                              main=paste0("log2(TPM+1) of genes in geneset: \n",path_n[[i]]), border_color = NA,
+                              #color=colorRampPalette(c("blue","white","red"))(100), 
+                              #color = color.test,
+                              show_rownames = T)
+    
+    # stat 
+    ret$stat[[i]] <- rbind("*** Stat Table ***",
+                           paste0("Pathway: ",path_n[[i]]),
+                           paste0("total genes: ",length(gene_sign[[i]])),
+                           paste0("expressed genes: ",sum(b.sign)),
+                           #paste(ret$genes[b.sign],collapse=" ")
+                           paste(rownames(ret$mat_z[[i]]),collapse=" ")
+    )
+  }
+  
+  
+  # output
+  rett <- list()
+  
+  rett$stat <- ret$stat
+  rett$OE <- ret$sig.scores
+  rett$mat_z <- ret$mat_z
+  rett$bar <- ret$bar
+  rett$heat <- ret$heat
+  rett$heatl <- ret$heatl
+  return(rett)
+}
+```
+
+### on SI_CTL_INFvsPBS            
+
+#### sorted DEGs          
+##### using raw matrix 
+```{r echo=FALSE}
+OE1_result <- easy_OE(mat_e = matt_pc[,c(idx.SI.CTL_INF,idx.SI.CTL_PBS,idx.SI.CKO_INF)],
+               cells_s = colnames(matt_pc)[c(idx.SI.CTL_INF,idx.SI.CTL_PBS,idx.SI.CKO_INF)],
+               path_n = list(SI_CTL_INFvsPBS.up_p0.05_FC1.5="SI_CTL_INFvsPBS.up_p0.05_FC1.5_163",
+                             SI_CTL_INFvsPBS.up_p0.05_FC2="SI_CTL_INFvsPBS.up_p0.01_FC2_36"), 
+               gene_sign = list(SI_CTL_INFvsPBS.up_p0.05_FC1.5 = DEG.up2$gene,
+                                SI_CTL_INFvsPBS.up_p0.05_FC2 = DEG.up1$gene))
+```
+
+#### OE barplot           
+```{r echo=FALSE}
+OE1_result$bar
+```
+
+#### comparison boxplot           
+
+```{r paged.print=FALSE}
+OE1 <- reshape2::melt(OE1_result$OE)
+colnames(OE1) <- c("sample","geneset","OE_score")
+OE1$condition <- rep(c(rep("SI_CTL_INF",3),
+                  rep("SI_CTL_PBS",4),
+                  rep("SI_CKO_INF",4)),2)
+OE1$condition <- factor(OE1$condition,levels=c("SI_CTL_PBS","SI_CKO_INF","SI_CTL_INF"))
+OE1
+```
+
+```{r}
+write.csv(OE1,"./OE_score.SI_INFup.csv",row.names = F)
+```
+
+
+```{r echo=FALSE, fig.height=6, fig.width=9, message=FALSE, warning=FALSE}
+ggplot(OE1, aes(x=condition, y=OE_score, fill=condition))+
+  ylim(c(-1.5,1.5)) +
+  geom_boxplot()+
+  geom_jitter() +
+  theme_bw()+
+  facet_grid(rows = "geneset") + 
+  stat_compare_means(aes(lable = ..p.signif..), comparisons = list(c("SI_CTL_INF","SI_CTL_PBS")),method = "t.test") +
+  #stat_compare_means(aes(lable = ..p.signif..), comparisons = list(c("SI_CTL_INF","SI_CTL_PBS")),
+  #                   symnum.args = list(cutpoints = c(0, 0.0001, 0.001, 0.01, 0.05, 1), symbols = c("****", "***", "**", "*", "ns"))) +
+  geom_point(data = dat_mean1, color=c("darkred","darkred","darkgreen","darkgreen"),
+             mapping = aes(x=condition,y=average))+ labs(title = "Overall Expression of SI_CTL_INFvsPBS.up-DEGs(t-test)\n(using raw TPM matrix)")
+```
+
+
+```{r warning=FALSE,fig.width=4, fig.height=6}
+p2 <- ggplot(OE1 %>% filter(geneset=="SI_CTL_INFvsPBS.up_p0.05_FC1.5"), 
+             aes(x=condition, y=OE_score, fill=condition))+
+  #ylim(ylims) +
+  geom_boxplot()+
+  theme_classic()+
+  #facet_grid(rows = "geneset") + 
+  stat_summary(fun=mean, geom="point", shape=18, size=3, color="black") +
+  stat_compare_means(aes(lable = ..p.signif..), comparisons = list(c("SI_CTL_PBS","SI_CKO_INF"),
+                                                                   c("SI_CTL_INF","SI_CKO_INF"),
+                                                                   c("SI_CTL_PBS","SI_CTL_INF")),
+                     method = "t.test") +
+  #facet_wrap(~geneset) +
+  scale_fill_manual(values = rev(c("#3984FF","#FF9428","#F8665A")), limits=rev) +
+ # geom_jitter(width = 0.01)  + 
+  labs(title = "Overall Expression of INFup DEGs \n(p.adj<0.05, |FC|>1.5)") + guides(fill=guide_legend(reverse = T))+
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, vjust = 1))
+  #geom_point(data = dat_mean, color=colormean,
+  #           mapping = aes(x=condition,y=average))+ labs(title = title) +
+  #scale_fill_manual(values = colors)
+p2
+```
+
+
+
+```{r warning=FALSE,fig.width=4, fig.height=6}
+p3 <- ggplot(OE1 %>% filter(geneset=="SI_CTL_INFvsPBS.up_p0.05_FC2"), 
+             aes(x=condition, y=OE_score, fill=condition))+
+  #ylim(ylims) +
+  geom_boxplot()+
+  theme_classic()+
+  #facet_grid(rows = "geneset") + 
+  stat_summary(fun=mean, geom="point", shape=18, size=3, color="black") +
+  stat_compare_means(aes(lable = ..p.signif..), comparisons = list(c("SI_CTL_PBS","SI_CKO_INF"),
+                                                                   c("SI_CTL_INF","SI_CKO_INF"),
+                                                                   c("SI_CTL_PBS","SI_CTL_INF")),
+                     method = "t.test") +
+  #facet_wrap(~geneset) +
+  scale_fill_manual(values = rev(c("#3984FF","#FF9428","#F8665A")), limits=rev) +
+ # geom_jitter(width = 0.01)  + 
+  labs(title = "Overall Expression of INFup DEGs \n(p.adj<0.05, |FC|>2)") + guides(fill=guide_legend(reverse = T))+
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, vjust = 1))
+  #geom_point(data = dat_mean, color=colormean,
+  #           mapping = aes(x=condition,y=average))+ labs(title = title) +
+  #scale_fill_manual(values = colors)
+p3
+```
+
+
+
+
+```{r}
+ggsave("./OE_score.SI_INFup.FC1.5.PDF",
+       plot = p2,
+       width = 4,height = 6)
+ggsave("./OE_score.SI_INFup.FC2.PDF",
+       plot = p3,
+       width = 4,height = 6)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+

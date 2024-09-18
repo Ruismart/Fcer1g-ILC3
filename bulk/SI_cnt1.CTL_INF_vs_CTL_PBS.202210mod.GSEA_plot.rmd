@@ -1,0 +1,104 @@
+
+
+
+### GSEA enrichment                
+
+CTL_INF_vs_CTL_PBS                    
+
+KEGG                 
+
+```{r}
+gsea_up_kegg <- read.table("../analysis_0814/GSEA_mit/GSEA_v7.3_kegg.SI_cnt1_CON_INFvsPBS/gsea_report_for_CON_INF_1629081687272.tsv",
+                           header = T, sep = "\t") %>% filter(FDR.q.val < 0.052)
+gsea_dn_kegg <- read.table("../analysis_0814/GSEA_mit/GSEA_v7.3_kegg.SI_cnt1_CON_INFvsPBS/gsea_report_for_CON_PBS_1629081687272.tsv",
+                           header = T, sep = "\t") %>% filter(FDR.q.val < 0.052)
+```
+
+```{r paged.print=FALSE}
+gsea_up_kegg
+gsea_dn_kegg
+```
+
+```{r paged.print=FALSE}
+gsea.df <- rbind(gsea_up_kegg,gsea_dn_kegg) %>% arrange(desc(NES))
+gsea.df$FDR.q.val[gsea.df$FDR.q.val==0] <- 1e-4
+gsea.df$NAME <- factor(gsea.df$NAME, 
+                       levels = rev(gsea.df$NAME))
+
+gsea.df
+```
+
+```{r paged.print=FALSE, fig.width=7.5, fig.height=4.8}
+gsea.df %>%
+  ggplot(mapping = aes(x=NAME, y=NES, fill= -log10(FDR.q.val))) + geom_bar(stat = "identity") + 
+  coord_flip() + theme_classic() + labs(title="GSEA Enrichment of SI CTL_INF vs CTL_PBS",x="") + scale_fill_viridis_c()
+```
+
+```{r paged.print=FALSE, fig.width=7.5, fig.height=3.2}
+gsea.df %>% filter(NES>0) %>%
+  ggplot(mapping = aes(x=NAME, y=NES, fill= -log10(FDR.q.val))) + geom_bar(stat = "identity") + 
+  coord_flip() + theme_classic() + labs(title="GSEA Enrichment of SI CTL_INF vs CTL_PBS",x="") + scale_fill_viridis_c()
+```
+
+```{r eval=FALSE, include=FALSE}
+ggsave("./figures/SI_cnt1.CTL_INF_vs_CTL_PBS/fig.S4F.gsea_barplot.pdf",
+       plot = gsea.df %>%
+  ggplot(mapping = aes(x=NAME, y=NES, fill= -log10(FDR.q.val))) + geom_bar(stat = "identity") + 
+  coord_flip() + theme_classic() + labs(title="GSEA Enrichment of SI CTL_INF vs CTL_PBS",x="") + scale_fill_viridis_c(),
+       width = 8.5,height = 4.5)
+
+ggsave("./figures/SI_cnt1.CTL_INF_vs_CTL_PBS/fig.S4F.gsea_barplot.INF_only.pdf",
+       plot = gsea.df %>% filter(NES>0) %>%
+  ggplot(mapping = aes(x=NAME, y=NES, fill= -log10(FDR.q.val))) + geom_bar(stat = "identity") + 
+  coord_flip() + theme_classic() + labs(title="GSEA Enrichment of SI CTL_INF vs CTL_PBS",x="") + scale_fill_viridis_c(),
+       width = 8.5,height = 3.2)
+
+```
+
+
+## pathway replot             
+
+
+```{r}
+source("./ReplotGSEA.mod.R")
+```
+
+```{r echo=FALSE, fig.height=4, fig.width=4}
+replotGSEA("../analysis_0814/GSEA_mit/GSEA_v7.3_kegg.SI_cnt1_CON_INFvsPBS",
+           "KEGG_CYTOKINE_CYTOKINE_RECEPTOR_INTERACTION",
+           c("SI_CTL_INF","SI_CTL_PBS"))
+```
+
+```{r echo=FALSE, fig.height=4, fig.width=4}
+replotGSEA("../analysis_0814/GSEA_mit/GSEA_v7.3_kegg.SI_cnt1_CON_INFvsPBS",
+           "KEGG_CELL_ADHESION_MOLECULES_CAMS",
+           c("SI_CTL_INF","SI_CTL_PBS"))
+```
+
+
+```{r echo=FALSE, fig.height=4, fig.width=4}
+replotGSEA("../analysis_0814/GSEA_mit/GSEA_v7.3_kegg.SI_cnt1_CON_INFvsPBS",
+           "KEGG_INTESTINAL_IMMUNE_NETWORK_FOR_IGA_PRODUCTION",
+           c("SI_CTL_INF","SI_CTL_PBS"))
+```
+
+```{r echo=FALSE, fig.height=4, fig.width=4}
+replotGSEA("../analysis_0814/GSEA_mit/GSEA_v7.3_kegg.SI_cnt1_CON_INFvsPBS",
+           "KEGG_JAK_STAT_SIGNALING_PATHWAY",
+           c("SI_CTL_INF","SI_CTL_PBS"))
+```
+
+```{r echo=FALSE, fig.height=4, fig.width=4}
+replotGSEA("../analysis_0814/GSEA_mit/GSEA_v7.3_kegg.SI_cnt1_CON_INFvsPBS",
+           "KEGG_CHEMOKINE_SIGNALING_PATHWAY",
+           c("SI_CTL_INF","SI_CTL_PBS"))
+```
+
+```{r echo=FALSE, fig.height=4, fig.width=4}
+replotGSEA("../analysis_0814/GSEA_mit/GSEA_v7.3_kegg.SI_cnt1_CON_INFvsPBS",
+           "KEGG_ECM_RECEPTOR_INTERACTION",
+           c("SI_CTL_INF","SI_CTL_PBS"))
+```
+
+
+

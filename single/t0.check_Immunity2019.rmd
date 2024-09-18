@@ -1,0 +1,218 @@
+
+
+```{r message=FALSE, warning=FALSE}
+source("/Shared_win/projects/RNA_normal/analysis.10x.r")
+```
+
+```{r}
+load("I:/Shared_win/projects/20210630_SS2_ZY/analysis_1008/pp_lp_obj_v1.meta_recovered_20211009.rda")
+pp.lp.obj.new
+```
+
+
+```{r paged.print=FALSE}
+head(pp.lp.obj.new@meta.data)
+```
+
+
+```{r}
+table(pp.lp.obj.new$treat)
+```
+
+```{r}
+table(pp.lp.obj.new$Anno)
+```
+
+```{r}
+table(pp.lp.obj.new$Anno_2)
+```
+
+
+```{r}
+GEX.seur <- subset(pp.lp.obj.new, subset = treat == "PBS")
+GEX.seur
+```
+
+
+```{r fig.width=10, fig.height=5.4}
+DimPlot(pp.lp.obj.new) + labs(title = "PBS + OVA")
+```
+
+```{r fig.width=10, fig.height=5.4}
+DimPlot(GEX.seur) + labs(title = "PBS")
+```
+
+```{r eval=FALSE, include=FALSE}
+ggsave("check_Immunity2019/Anno_all.pdf",
+       plot = DimPlot(pp.lp.obj.new) + labs(title = "PBS + OVA"),
+       width = 11.1,height = 5.4)
+
+ggsave("check_Immunity2019/Anno_PBS.pdf",
+       plot = DimPlot(GEX.seur) + labs(title = "PBS"),
+       width = 11.1,height = 5.4)
+```
+
+
+
+
+```{r}
+pp1 <- VlnPlot(GEX.seur, features = c("Fcer1g","Fcer1a","Fcgr1","Fcgr4","Fcgr3"), ncol = 1, combine = F, same.y.lims = T,pt.size = 0.01)
+
+for(i in 1:length(pp1)){
+  pp1[[i]] <- pp1[[i]] + NoLegend() + labs(x="")
+}
+
+for(i in 1:(length(pp1)-1)){
+  pp1[[i]] <- pp1[[i]] + theme(axis.text.x = element_blank())
+}
+
+pp1[[5]] <- pp1[[5]] +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3))
+
+```
+
+
+
+```{r fig.height=12, fig.width=6}
+cowplot::plot_grid(
+  plotlist = pp1,
+  rel_heights = c(1,1,1,1,2.1),
+  ncol = 1
+)
+```
+
+
+```{r}
+pdf("check_Immunity2019/PBS_allcell.five_markers.violin.pdf",
+    width = 6,height = 12)
+cowplot::plot_grid(
+  plotlist = pp1,
+  rel_heights = c(1,1,1,1,2.1),
+  ncol = 1
+)
+dev.off()
+```
+
+
+
+
+```{r}
+ILC.seur <- subset(GEX.seur, subset= Anno %in% levels(GEX.seur$Anno)[c(3,4,8,11,12)])
+
+
+ILC.seur
+```
+
+
+```{r}
+
+color.pp1 <- c("#72998B","#8E5389","#764859","#A6A566","#613452")
+
+pp2 <- VlnPlot(ILC.seur, 
+               features = c("Fcer1g","Fcer1a","Fcgr1","Fcgr4","Fcgr3"), ncol = 1, combine = F, same.y.lims = T,pt.size = 0.001)
+
+for(i in 1:length(pp2)){
+  pp2[[i]] <- pp2[[i]] + NoLegend() + labs(x="",y="") +
+    theme(plot.margin = unit(c(0.03,0.1,0,0.1),"cm"))
+}
+
+for(i in 1:(length(pp2)-1)){
+  pp2[[i]] <- pp2[[i]] + theme(axis.text.x = element_blank())
+}
+
+pp2[[5]] <- pp2[[5]] +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, vjust = 1))
+
+```
+
+
+
+```{r fig.height=8, fig.width=3, message=FALSE, warning=FALSE}
+cowplot::plot_grid(
+  plotlist = pp2,
+  rel_heights = c(1,1,1,1,1.45),
+  ncol = 1
+)
+```
+
+```{r eval=FALSE, include=FALSE}
+pdf("check_Immunity2019/PBS_ILCs.five_markers.violin.pdf",
+    width = 3,height = 8)
+cowplot::plot_grid(
+  plotlist = pp2,
+  rel_heights = c(1,1,1,1,1.45),
+  ncol = 1
+)
+dev.off()
+```
+
+
+```{r fig.height=4, fig.width=4, message=FALSE, warning=FALSE}
+pp2.1 <- DotPlot(ILC.seur, 
+                features = rev(c("Fcer1g","Fcer1a","Fcgr1","Fcgr4","Fcgr3")),cols = c("midnightblue","darkorange1")) +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, vjust = 1))# + 
+  #scale_y_discrete(limits=rev)
+
+pp2.1
+```
+
+```{r eval=FALSE, include=FALSE}
+pdf("check_Immunity2019/PBS_ILCs.five_markers.dotplot.pdf",
+    width = 4.5,height = 4)
+pp2.1
+dev.off()
+```
+
+
+
+```{r fig.width=7.5, fig.height=9.5}
+markers_for_Drd <- c("Ptprc",
+                      "Cd19","Cd79a",
+
+                      "Apoe",
+                      "Ly6a","Syk","Ighm","Igkc","Zbtb20",
+                      "Ly6d","Ms4a1","Sell",
+                      "Lag3","Mzb1","Xbp1","Sdc1",
+                      "Mef2b","Rgs13","Aicda",
+                      "Pcna", "Top2a", "Mcm6", "Mki67",
+                      "Cd3d","Cd3e","Cd247",
+                      "Cd4","Izumo1r","Cd5",
+                      "Foxp3","Ctla4",
+                      "Tigit","Pdcd1",
+                      "Il2ra",
+                      "Cd8a","Cd8b1","Itgae","Ccr7",
+                      "Isg15","Stat1","Ifit3","Usp18",
+                      "Tcrg-V6","Trdc",
+                      "Klrb1c","Klre1",
+                      "Eomes","Ifng",
+                      "Tbx21",
+                      "Ncr1","Fcer1g","Ccr6","Il1rl1",
+                      "Gata3","Rnf128","Lpcat2","Calca","Areg","Hilpda",
+                     paste0("Drd",1:5))
+
+DotPlot(GEX.seur, features = rev(markers_for_Drd))  + coord_flip() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 9.6))
+```
+
+```{r fig.width=8, fig.height=5}
+VlnPlot(GEX.seur , features = "Drd4") + NoLegend()
+```
+
+```{r fig.width=8, fig.height=5}
+VlnPlot(GEX.seur , features = "Penk") + NoLegend()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+

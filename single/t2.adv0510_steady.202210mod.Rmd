@@ -1,0 +1,2133 @@
+---
+output: 
+  html_document: 
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+---
+
+
+# adv steady                             
+
+20210510_10x_HC          
+sc_10x, ILCs at the steady state             
+
+
+run20220701                               
+
+```{r message=FALSE, warning=FALSE}
+source("/Shared_win/projects/RNA_normal/analysis.10x.r")
+```
+
+
+## load pure obj  
+
+```{r}
+GEX.seur <- readRDS("./initial0510_steady.pure.rds")
+GEX.seur
+```
+
+```{r}
+GEX.seur$preAnno1 <- factor(as.character(GEX.seur$preAnno1),
+                                    levels = grep("NK|ILC1|ILC2|ILC3",levels(GEX.seur$preAnno1),value = T))
+                             
+GEX.seur$preAnno2 <- factor(as.character(GEX.seur$preAnno2),
+                                    levels = grep("NK|ILC1|ILC2|ILC3",levels(GEX.seur$preAnno2),value = T))
+```
+
+
+```{r}
+levels(GEX.seur$preAnno1)
+levels(GEX.seur$preAnno2)
+```
+
+
+```{r}
+ggsci::pal_igv("default")(40)
+```
+
+```{r fig.height=8, fig.width=9}
+scales::show_col(ggsci::pal_igv("default")(49))
+```
+
+
+```{r}
+color.pre1 <-  ggsci::pal_igv("default")(49)[c(15,10,2,
+                                               7,33,
+                                               9,3,24,
+                                               23,4,16,38,35)]
+color.pre2 <- ggsci::pal_igv("default")(49)[c(15,10,
+                                              7,
+                                              9,
+                                              23)]
+```
+
+
+```{r fig.width=12,fig.height=5.5}
+(DimPlot(GEX.seur, reduction = "umap", group.by = "preAnno1", label = T, label.size = 3.5,repel = T,
+          cols =color.pre1) + NoLegend()) +
+  (DimPlot(GEX.seur, reduction = "umap", group.by = "preAnno2", label = T, label.size = 3.5,repel = T,
+          cols =color.pre2) + NoLegend())
+```
+
+### re-check QC                
+
+```{r fig.width=12,fig.height=4.5}
+DimPlot(GEX.seur, reduction = "pca",dims = 1:2, group.by = "preAnno1",cols =color.pre1) +
+  DimPlot(GEX.seur, reduction = "pca",dims = 3:4, group.by = "preAnno1",cols =color.pre1)
+```
+
+```{r fig.width=12,fig.height=4.5}
+DimPlot(GEX.seur, reduction = "pca",dims = 1:2, group.by = "preAnno2",cols =color.pre2) +
+  DimPlot(GEX.seur, reduction = "pca",dims = 3:4, group.by = "preAnno2",cols =color.pre2)
+```
+
+```{r fig.width=8, fig.height=4.5}
+VlnPlot(GEX.seur, features = c("nFeature_RNA", "nCount_RNA", "percent.mt","percent.rb"), ncol = 4, pt.size = 0.1, group.by = "SP.info")
+VlnPlot(GEX.seur, features = c("nFeature_RNA", "nCount_RNA", "percent.mt","percent.rb"), ncol = 4, pt.size = 0, group.by = "SP.info")
+```
+
+
+```{r fig.width=16, fig.height=4.5}
+VlnPlot(GEX.seur, features = c("nFeature_RNA", "nCount_RNA", "percent.mt","percent.rb"), ncol = 4, pt.size = 0.1, group.by = "preAnno1",cols =color.pre1)
+VlnPlot(GEX.seur, features = c("nFeature_RNA", "nCount_RNA", "percent.mt","percent.rb"), ncol = 4, pt.size = 0, group.by = "preAnno1",cols =color.pre1)
+```
+
+```{r fig.width=16, fig.height=4.5}
+VlnPlot(GEX.seur, features = c("nFeature_RNA", "nCount_RNA", "percent.mt","percent.rb"), ncol = 4, pt.size = 0.1, group.by = "preAnno2",cols =color.pre2)
+VlnPlot(GEX.seur, features = c("nFeature_RNA", "nCount_RNA", "percent.mt","percent.rb"), ncol = 4, pt.size = 0, group.by = "preAnno2",cols =color.pre2)
+```
+
+
+```{r fig.width=17.6,fig.height=4.8}
+plota <- FeatureScatter(GEX.seur, feature1 = "nCount_RNA", feature2 = "percent.mt", group.by = "preAnno1",cols =color.pre1) 
+             #coord_cartesian(xlim =c(0, 40000), ylim = c(0, 40))
+plotb <- FeatureScatter(GEX.seur, feature1 = "nCount_RNA", feature2 = "nFeature_RNA", group.by = "preAnno1",cols =color.pre1)
+             #coord_cartesian(xlim =c(0, 40000), ylim = c(0, 4000))
+plotc <- FeatureScatter(GEX.seur, feature1 = "nCount_RNA", feature2 = "percent.rb", group.by = "preAnno1",cols =color.pre1)
+plota + plotb + plotc
+```
+
+
+```{r fig.width=17.6,fig.height=4.8}
+plota <- FeatureScatter(GEX.seur, feature1 = "nCount_RNA", feature2 = "percent.mt", group.by = "preAnno2",cols =color.pre2) 
+             #coord_cartesian(xlim =c(0, 40000), ylim = c(0, 40))
+plotb <- FeatureScatter(GEX.seur, feature1 = "nCount_RNA", feature2 = "nFeature_RNA", group.by = "preAnno2",cols =color.pre2)
+             #coord_cartesian(xlim =c(0, 40000), ylim = c(0, 4000))
+plotc <- FeatureScatter(GEX.seur, feature1 = "nCount_RNA", feature2 = "percent.rb", group.by = "preAnno2",cols =color.pre2)
+plota + plotb + plotc
+```
+
+### cell composition             
+
+```{r}
+color.stat1 <- color.pre1
+names(color.stat1) <- levels(GEX.seur$preAnno1)
+
+color.stat2 <- color.pre2
+names(color.stat2) <- levels(GEX.seur$preAnno2)
+```
+
+
+```{r fig.width=10.5,fig.height=8}
+DimPlot(GEX.seur, reduction = "umap", label = F,group.by = "preAnno1", split.by = "SP.info", ncol = 2,
+        cols = color.stat1) 
+```
+
+```{r fig.width=9.6,fig.height=8}
+DimPlot(GEX.seur, reduction = "umap", label = F,group.by = "preAnno2", split.by = "SP.info", ncol = 2,
+        cols = color.stat2) 
+```
+
+#### preAnno1         
+
+```{r}
+stat.SP <- table(GEX.seur@meta.data[,c("SP.info","preAnno1")])
+stat.SP
+```
+
+```{r}
+round(rowRatio(stat.SP),3)
+```
+
+```{r fig.height=6, fig.width=6}
+melt.SP <- reshape2::melt(stat.SP)
+melt.SP$preAnno1 <- factor(as.character(melt.SP$preAnno1),
+                                levels = rev(levels(GEX.seur$preAnno1)))
+
+
+p.SP <- ggplot(melt.SP, aes(SP.info, weight=value, fill=preAnno1)) +
+  geom_bar(color="black", width = .7, position = "fill") +
+  labs( y = "Proportion of total (%)",title = "",x="") +
+  scale_fill_manual(values = color.stat1[rev(levels(GEX.seur$preAnno1))]) +
+  scale_y_continuous(expand = c(0,0), n.breaks = 6, labels = c(0,20,40,60,80,100)) + 
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 13.6),
+        axis.text.y = element_text(size = 16))+
+  guides(fill = guide_legend(reverse = T, title = ""))
+p.SP
+```
+
+
+```{r}
+stat.FB <- table(GEX.seur@meta.data[,c("FB.info","preAnno1")])
+stat.FB[3:8,]
+```
+
+
+```{r}
+round(rowRatio(stat.FB),3)[3:8,]
+```
+
+
+```{r fig.height=6, fig.width=6}
+melt.FB <- reshape2::melt(stat.FB)
+melt.FB <- melt.FB %>% filter(FB.info %in%  paste0("hashtag",1:6))
+melt.FB$FB.info <- factor(as.character(melt.FB$FB.info), levels = paste0("hashtag",1:6))
+melt.FB$preAnno1 <- factor(as.character(melt.FB$preAnno1),
+                                levels = rev(levels(GEX.seur$preAnno1)))
+
+p.FB <- ggplot(melt.FB, aes(FB.info, weight=value, fill=preAnno1)) +
+  geom_bar(color="black", width = .7, position = "fill") +
+  labs( y = "Proportion of total (%)",title = "",x="") +
+  scale_fill_manual(values = color.stat1[rev(levels(GEX.seur$preAnno1))]) +
+  scale_y_continuous(expand = c(0,0), n.breaks = 6, labels = c(0,20,40,60,80,100)) + 
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 13.6),
+        axis.text.y = element_text(size = 16))+
+  guides(fill = guide_legend(reverse = T, title = ""))
+p.FB
+```
+
+#### preAnno2         
+
+```{r}
+stat.SP <- table(GEX.seur@meta.data[,c("SP.info","preAnno2")])
+stat.SP
+```
+
+```{r}
+round(rowRatio(stat.SP),3)
+```
+
+```{r fig.height=6, fig.width=6}
+melt.SP <- reshape2::melt(stat.SP)
+melt.SP$preAnno2 <- factor(as.character(melt.SP$preAnno2),
+                                levels = rev(levels(GEX.seur$preAnno2)))
+
+p.SP <- ggplot(melt.SP, aes(SP.info, weight=value, fill=preAnno2)) +
+  geom_bar(color="black", width = .7, position = "fill") +
+  labs( y = "Proportion of total (%)",title = "",x="") +
+  scale_fill_manual(values = color.stat2[rev(levels(GEX.seur$preAnno2))]) +
+  scale_y_continuous(expand = c(0,0), n.breaks = 6, labels = c(0,20,40,60,80,100)) + 
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 13.6),
+        axis.text.y = element_text(size = 16))+
+  guides(fill = guide_legend(reverse = T, title = ""))
+p.SP
+```
+
+
+
+```{r}
+stat.FB <- table(GEX.seur@meta.data[,c("FB.info","preAnno2")])
+stat.FB[3:8,]
+```
+
+
+```{r}
+round(rowRatio(stat.FB),3)[3:8,]
+```
+
+
+```{r fig.height=6, fig.width=6}
+melt.FB <- reshape2::melt(stat.FB)
+melt.FB <- melt.FB %>% filter(FB.info %in%  paste0("hashtag",1:8))
+melt.FB$FB.info <- factor(as.character(melt.FB$FB.info), levels = paste0("hashtag",1:8))
+melt.FB$preAnno2 <- factor(as.character(melt.FB$preAnno2),
+                                levels = rev(levels(GEX.seur$preAnno2)))
+
+p.FB <- ggplot(melt.FB, aes(FB.info, weight=value, fill=preAnno2)) +
+  geom_bar(color="black", width = .7, position = "fill") +
+  labs( y = "Proportion of total (%)",title = "",x="") +
+  scale_fill_manual(values = color.stat2[rev(levels(GEX.seur$preAnno2))]) +
+  scale_y_continuous(expand = c(0,0), n.breaks = 6, labels = c(0,20,40,60,80,100)) + 
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 13.6),
+        axis.text.y = element_text(size = 16))+
+  guides(fill = guide_legend(reverse = T, title = ""))
+p.FB
+```
+
+hard to say about the change of cell ratio   
+
+
+## reclustering             
+
+```{r}
+GEX.seur.raw <- GEX.seur
+```
+
+### reclustering        
+
+#### Normalizing       
+
+
+```{r message=FALSE, warning=FALSE,varselection,fig.width=12,fig.height=4}
+GEX.seur <- FindVariableFeatures(GEX.seur, selection.method = "vst", nfeatures = 1500)
+
+# Identify the 10 most highly variable genes
+top10 <- head(VariableFeatures(GEX.seur), 10)
+
+# plot variable features with and without labels
+plot1 <- VariableFeaturePlot(GEX.seur)
+plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+plot1 + plot2
+```
+
+```{r}
+head(VariableFeatures(GEX.seur), 200)
+```
+
+
+```{r}
+# exclude MT genes  and more 
+MT_gene <- grep("^mt-",rownames(GEX.seur),value = T)
+DIG <- grep("^Tra|^Trb|^Trg|^Trd|^Tcr|^Igm|^Igh|^Igk|^Igl|Jchain|Mzb1|^Hsp|^Rps|^Rpl|Hbb-|Hba-|^Dnaj|^Fos|^Jun|^Hsp|^AY|^Gm|^Hist|Rik$",
+            rownames(GEX.seur),value = T)
+CC_gene <- Hmisc::capitalize(tolower(as.vector(unlist(cc.genes.updated.2019))))
+
+
+GEX.seur <- RunPCA(GEX.seur, features = setdiff(VariableFeatures(object = GEX.seur),
+                                                c(MT_gene,DIG, CC_gene) ))
+```
+
+
+```{r}
+length(setdiff(VariableFeatures(object = GEX.seur),
+                                                c(MT_gene,DIG, CC_gene) ))
+head(setdiff(VariableFeatures(object = GEX.seur),
+                                                c(MT_gene,DIG, CC_gene) ),300
+     
+     )
+```
+
+```{r eval=FALSE, include=FALSE}
+write.table(setdiff(VariableFeatures(object = GEX.seur),
+                                                c(MT_gene,DIG, CC_gene) ),
+            "./adv0510_steady.var_features.txt",
+            col.names = F, row.names = F, quote = F)
+```
+
+
+```{r fig.width=12,fig.height=4.5}
+DimPlot(GEX.seur, reduction = "pca",dims = 1:2) +
+  DimPlot(GEX.seur, reduction = "pca",dims = 3:4)
+```
+
+```{r}
+color.SP <- scales::hue_pal()(4)[c(2,1,3,4)]
+names(color.SP) <- levels(GEX.seur$SP.info)
+color.SP
+```
+
+```{r fig.width=12,fig.height=4.5}
+DimPlot(GEX.seur, reduction = "pca",dims = 1:2, group.by = "SP.info", cols = color.SP) +
+  DimPlot(GEX.seur, reduction = "pca",dims = 3:4, group.by = "SP.info", cols = color.SP)
+```
+
+```{r fig.width=8.4,fig.height=5.6}
+DimPlot(GEX.seur, reduction = "pca",dims = 1:2, group.by = "SP.info", split.by = "SP.info", cols = color.SP) +
+  DimPlot(GEX.seur, reduction = "pca",dims = 2:3, group.by = "SP.info", split.by = "SP.info", cols = color.SP)
+```
+
+```{r pcsheat,fig.width=12,fig.height=18}
+DimHeatmap(GEX.seur, dims = 1:12, cells = 1500, balanced = TRUE,ncol = 4)
+```
+
+```{r}
+ElbowPlot(GEX.seur,ndims = 50)
+```
+
+
+```{r}
+PCs <- 1:28
+```
+
+```{r}
+GEX.seur <- FindNeighbors(GEX.seur, dims = PCs, k.param = 50)
+GEX.seur <- FindClusters(GEX.seur, method = 'igraph', resolution = 1.2)
+```
+
+#### Run UMAP/tSNE    
+
+```{r}
+GEX.seur <- RunTSNE(GEX.seur, dims=PCs, complexity = 100)
+GEX.seur <- RunUMAP(GEX.seur, dims=PCs, n.neighbors = 50)
+```
+
+
+```{r fig.width=10.5,fig.height=4.5}
+DimPlot(GEX.seur, reduction = "tsne", label = T) + DimPlot(GEX.seur, reduction = "umap", label = T)
+```
+
+```{r fig.width=6.5,fig.height=6}
+DimPlot(GEX.seur, reduction = "umap", label = F,group.by = "SP.info", split.by = "SP.info", ncol = 2,
+        cols = color.SP) 
+```
+
+```{r fig.width=7.5,fig.height=6}
+FeaturePlot(GEX.seur, reduction = "umap", features = c("nFeature_RNA","nCount_RNA","percent.mt","percent.rb"))
+```
+
+#### check some markers       
+
+```{r}
+#
+GEX.seur$sort_clusters <- factor(as.character(GEX.seur$seurat_clusters),
+                                 levels = c(11,   # NK
+                                            2,8, # ILC1
+                                            7,1,   # Ccr6N.ILC
+                                            0,3,   # Ccr6N.ILC3
+                                            9,5,4,6,10    # ILC2   
+                                            ))
+
+```
+
+
+
+```{r}
+markers.anno <- list(NK=c("Ptprc","Klrb1c","Ncr1","Tbx21","Ifng","Eomes"),
+                     ILC1=c("Nkg7","Ccl4"),
+                     ILC3=c("Rorc","Cd93","Kcnk1","Ncoa7","Il1r1","Il22","Tnfsf11","Prr29",
+                            "Serpinb1a","Irf7","Ccr6","Cdc14a","Hmgn3","Cx3cl1","Nmrk1",
+                            "Ccr1","Platr3","Tgm3","Kdm4a"),
+                     ILC2=c("Gata3","Il1rl1","Calca","Areg",
+                            "Il2ra","Il13","Il4","Il5","Klrg1","Csf2","Inpp4b"))
+length(unlist(markers.anno))
+```
+
+```{r fig.width=5.6, fig.height=6.6}
+DotPlot(GEX.seur, features = rev(as.vector(unlist(markers.anno))), group.by = "sort_clusters")  + coord_flip() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 9.6))
+``` 
+
+```{r fig.width=12, fig.height=24}
+FeaturePlot(GEX.seur, features = as.vector(unlist(markers.anno)), ncol = 4)
+```
+
+
+### Anno                
+
+```{r}
+GEX.seur$Anno1 <- as.character(GEX.seur$seurat_clusters)
+
+GEX.seur$Anno1[GEX.seur$Anno1 %in% c(11)] <- "NK"
+
+GEX.seur$Anno1[GEX.seur$Anno1 %in% c(2)] <- "ILC1_1"
+GEX.seur$Anno1[GEX.seur$Anno1 %in% c(8)] <- "ILC1_2"
+
+GEX.seur$Anno1[GEX.seur$Anno1 %in% c(7)] <- "Ccr6N.ILC3_1"
+GEX.seur$Anno1[GEX.seur$Anno1 %in% c(1)] <- "Ccr6N.ILC3_2"
+GEX.seur$Anno1[GEX.seur$Anno1 %in% c(0)] <- "Ccr6P.ILC3_1"
+GEX.seur$Anno1[GEX.seur$Anno1 %in% c(3)] <- "Ccr6P.ILC3_2"
+
+GEX.seur$Anno1[GEX.seur$Anno1 %in% c(9)] <- "ILC2_1"
+GEX.seur$Anno1[GEX.seur$Anno1 %in% c(5)] <- "ILC2_2"
+GEX.seur$Anno1[GEX.seur$Anno1 %in% c(4)] <- "ILC2_3"
+GEX.seur$Anno1[GEX.seur$Anno1 %in% c(6)] <- "ILC2_4"
+GEX.seur$Anno1[GEX.seur$Anno1 %in% c(10)] <- "ILC2_5"
+
+GEX.seur$Anno1 <- factor(GEX.seur$Anno1,
+                            levels = c("NK",
+                                       paste0("ILC1_",1:2),
+                                       paste0("Ccr6N.ILC3_",1:2),
+                                       paste0("Ccr6P.ILC3_",1:2),
+                                       paste0("ILC2_",1:5)))
+
+```
+
+```{r}
+GEX.seur$Anno2 <- as.character(GEX.seur$seurat_clusters)
+
+GEX.seur$Anno2[GEX.seur$Anno2 %in% c(11)] <- "NK"
+
+GEX.seur$Anno2[GEX.seur$Anno2 %in% c(2,8)] <- "ILC1"
+
+GEX.seur$Anno2[GEX.seur$Anno2 %in% c(7,1)] <- "Ccr6N.ILC3"
+GEX.seur$Anno2[GEX.seur$Anno2 %in% c(0,3)] <- "Ccr6P.ILC3"
+
+GEX.seur$Anno2[GEX.seur$Anno2 %in% c(9,5,4,6,10)] <- "ILC2"
+
+GEX.seur$Anno2 <- factor(GEX.seur$Anno2,
+                            levels = c("NK",
+                                       "ILC1",
+                                       "Ccr6N.ILC3",
+                                       "Ccr6P.ILC3",
+                                       "ILC2"))
+
+```
+
+
+```{r fig.width=5.6, fig.height=6.6}
+DotPlot(GEX.seur, features = rev(as.vector(unlist(markers.anno))), group.by = "Anno1")  + coord_flip() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 9.6))
+``` 
+
+```{r fig.width=4.6, fig.height=6.6}
+DotPlot(GEX.seur, features = rev(as.vector(unlist(markers.anno))), group.by = "Anno2")  + coord_flip() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 9.6))
+``` 
+
+
+```{r}
+color.A1 <-  ggsci::pal_igv("default")(49)[c(15,10,2,
+                                               7,33,
+                                               9,3,
+                                               23,4,16,38,35)]
+color.A2 <- ggsci::pal_igv("default")(49)[c(15,10,
+                                              7,
+                                              9,
+                                              23)]
+```
+
+
+```{r}
+
+#color.pp1 <- c("#72998B","#8E5389","#764859","#A6A566","#613452")
+
+pp2 <- VlnPlot(GEX.seur, group.by = "Anno2",
+               features = c("Fcer1g","Fcer1a","Fcgr1","Fcgr4","Fcgr3"), ncol = 1, combine = F, same.y.lims = T,pt.size = 0.001,
+               cols = color.A2)
+
+for(i in 1:length(pp2)){
+  pp2[[i]] <- pp2[[i]] + NoLegend() + labs(x="",y="") +
+    theme(plot.margin = unit(c(0.03,0.1,0,0.1),"cm"))
+}
+
+for(i in 1:(length(pp2)-1)){
+  pp2[[i]] <- pp2[[i]] + theme(axis.text.x = element_blank())
+}
+
+pp2[[5]] <- pp2[[5]] +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, vjust = 1))
+
+```
+
+
+
+```{r fig.height=8, fig.width=3, message=FALSE, warning=FALSE}
+cowplot::plot_grid(
+  plotlist = pp2,
+  rel_heights = c(1,1,1,1,1.55),
+  ncol = 1
+)
+```
+
+```{r fig.height=4, fig.width=4, message=FALSE, warning=FALSE}
+pp2.1 <- DotPlot(GEX.seur, group.by = "Anno2",
+                features = rev(c("Fcer1g","Fcer1a","Fcgr1","Fcgr4","Fcgr3")),cols = c("midnightblue","darkorange1")) +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, vjust = 1)) + labs(title = "All") 
+  #scale_y_discrete(limits=rev)
+
+pp2.1
+```
+
+
+```{r}
+
+#color.pp1 <- c("#72998B","#8E5389","#764859","#A6A566","#613452")
+
+pp2a <- VlnPlot(subset(GEX.seur,subset=SP.info=="SI_CTL"), group.by = "Anno2",
+               features = c("Fcer1g","Fcer1a","Fcgr1","Fcgr4","Fcgr3"), ncol = 1, combine = F, same.y.lims = T,pt.size = 0.001,
+               cols = color.A2)
+
+for(i in 1:length(pp2a)){
+  pp2a[[i]] <- pp2a[[i]] + NoLegend() + labs(x="",y="") +
+    theme(plot.margin = unit(c(0.03,0.1,0,0.1),"cm"))
+}
+
+for(i in 1:(length(pp2a)-1)){
+  pp2a[[i]] <- pp2a[[i]] + theme(axis.text.x = element_blank())
+}
+
+pp2a[[5]] <- pp2a[[5]] +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, vjust = 1))
+
+```
+
+
+
+```{r fig.height=8, fig.width=3, message=FALSE, warning=FALSE}
+cowplot::plot_grid(
+  plotlist = pp2a,
+  rel_heights = c(1,1,1,1,1.55),
+  ncol = 1
+)
+```
+
+```{r fig.height=4, fig.width=4, message=FALSE, warning=FALSE}
+pp2a.1 <- DotPlot(subset(GEX.seur,subset=SP.info=="SI_CTL"), group.by = "Anno2",
+                features = rev(c("Fcer1g","Fcer1a","Fcgr1","Fcgr4","Fcgr3")),cols = c("midnightblue","darkorange1")) +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, vjust = 1)) + labs(title = "SI_CTL") 
+  #scale_y_discrete(limits=rev)
+
+pp2a.1
+```
+
+
+```{r}
+
+#color.pp1 <- c("#72998B","#8E5389","#764859","#A6A566","#613452")
+
+pp2b <- VlnPlot(subset(GEX.seur,subset=SP.info=="SI_CKO"), group.by = "Anno2",
+               features = c("Fcer1g","Fcer1a","Fcgr1","Fcgr4","Fcgr3"), ncol = 1, combine = F, same.y.lims = T,pt.size = 0.001,
+               cols = color.A2)
+
+for(i in 1:length(pp2b)){
+  pp2b[[i]] <- pp2b[[i]] + NoLegend() + labs(x="",y="") +
+    theme(plot.margin = unit(c(0.03,0.1,0,0.1),"cm"))
+}
+
+for(i in 1:(length(pp2b)-1)){
+  pp2b[[i]] <- pp2b[[i]] + theme(axis.text.x = element_blank())
+}
+
+pp2b[[5]] <- pp2b[[5]] +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, vjust = 1))
+
+```
+
+
+
+```{r fig.height=8, fig.width=3, message=FALSE, warning=FALSE}
+cowplot::plot_grid(
+  plotlist = pp2b,
+  rel_heights = c(1,1,1,1,1.55),
+  ncol = 1
+)
+```
+
+```{r fig.height=4, fig.width=4, message=FALSE, warning=FALSE}
+pp2b.1 <- DotPlot(subset(GEX.seur,subset=SP.info=="SI_CKO"), group.by = "Anno2",
+                features = rev(c("Fcer1g","Fcer1a","Fcgr1","Fcgr4","Fcgr3")),cols = c("midnightblue","darkorange1")) +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, vjust = 1)) + labs(title = "SI_CKO") 
+  #scale_y_discrete(limits=rev)
+
+pp2b.1
+```
+
+
+```{r}
+
+#color.pp1 <- c("#72998B","#8E5389","#764859","#A6A566","#613452")
+
+pp2c <- VlnPlot(subset(GEX.seur,subset=SP.info=="LI_CTL"), group.by = "Anno2",
+               features = c("Fcer1g","Fcer1a","Fcgr1","Fcgr4","Fcgr3"), ncol = 1, combine = F, same.y.lims = T,pt.size = 0.001,
+               cols = color.A2)
+
+for(i in 1:length(pp2c)){
+  pp2c[[i]] <- pp2c[[i]] + NoLegend() + labs(x="",y="") +
+    theme(plot.margin = unit(c(0.03,0.1,0,0.1),"cm"))
+}
+
+for(i in 1:(length(pp2c)-1)){
+  pp2c[[i]] <- pp2c[[i]] + theme(axis.text.x = element_blank())
+}
+
+pp2c[[5]] <- pp2c[[5]] +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, vjust = 1))
+
+```
+
+
+
+```{r fig.height=8, fig.width=3, message=FALSE, warning=FALSE}
+cowplot::plot_grid(
+  plotlist = pp2c,
+  rel_heights = c(1,1,1,1,1.55),
+  ncol = 1
+)
+```
+
+```{r fig.height=4, fig.width=4, message=FALSE, warning=FALSE}
+pp2c.1 <- DotPlot(subset(GEX.seur,subset=SP.info=="LI_CTL"), group.by = "Anno2",
+                features = rev(c("Fcer1g","Fcer1a","Fcgr1","Fcgr4","Fcgr3")),cols = c("midnightblue","darkorange1")) +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, vjust = 1)) + labs(title = "LI_CTL") 
+  #scale_y_discrete(limits=rev)
+
+pp2c.1
+```
+
+
+
+```{r}
+
+#color.pp1 <- c("#72998B","#8E5389","#764859","#A6A566","#613452")
+
+pp2d <- VlnPlot(subset(GEX.seur,subset=SP.info=="LI_CKO"), group.by = "Anno2",
+               features = c("Fcer1g","Fcer1a","Fcgr1","Fcgr4","Fcgr3"), ncol = 1, combine = F, same.y.lims = T,pt.size = 0.001,
+               cols = color.A2)
+
+for(i in 1:length(pp2d)){
+  pp2d[[i]] <- pp2d[[i]] + NoLegend() + labs(x="",y="") +
+    theme(plot.margin = unit(c(0.03,0.1,0,0.1),"cm"))
+}
+
+for(i in 1:(length(pp2d)-1)){
+  pp2d[[i]] <- pp2d[[i]] + theme(axis.text.x = element_blank())
+}
+
+pp2d[[5]] <- pp2d[[5]] +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, vjust = 1))
+
+```
+
+
+
+```{r fig.height=8, fig.width=3, message=FALSE, warning=FALSE}
+cowplot::plot_grid(
+  plotlist = pp2d,
+  rel_heights = c(1,1,1,1,1.55),
+  ncol = 1
+)
+```
+
+```{r fig.height=4, fig.width=4, message=FALSE, warning=FALSE}
+pp2d.1 <- DotPlot(subset(GEX.seur,subset=SP.info=="LI_CKO"), group.by = "Anno2",
+                features = rev(c("Fcer1g","Fcer1a","Fcgr1","Fcgr4","Fcgr3")),cols = c("midnightblue","darkorange1")) +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, vjust = 1)) + labs(title = "LI_CKO") 
+  #scale_y_discrete(limits=rev)
+
+pp2d.1
+```
+
+
+
+
+
+
+### re-check QC                
+
+```{r fig.width=12,fig.height=4.5}
+DimPlot(GEX.seur, reduction = "pca",dims = 1:2, group.by = "Anno1",cols =color.A1) +
+  DimPlot(GEX.seur, reduction = "pca",dims = 3:4, group.by = "Anno1",cols =color.A1)
+```
+
+```{r fig.width=12,fig.height=4.5}
+DimPlot(GEX.seur, reduction = "pca",dims = 1:2, group.by = "Anno2",cols =color.A2) +
+  DimPlot(GEX.seur, reduction = "pca",dims = 3:4, group.by = "Anno2",cols =color.A2)
+```
+
+```{r fig.width=12,fig.height=4.5}
+DimPlot(GEX.seur, reduction = "umap", group.by = "Anno1",cols =color.A1) +
+  DimPlot(GEX.seur, reduction = "umap", group.by = "Anno2",cols =color.A2)
+```
+
+```{r eval=FALSE, include=FALSE}
+ggsave("../sc10x_steady/ILC2_Anno.umap.pdf",
+       plot = DimPlot(GEX.seur, reduction = "umap", group.by = "Anno1",cols =color.A1) +
+  DimPlot(GEX.seur, reduction = "umap", group.by = "Anno2",cols =color.A2),
+  width = 12, height = 4.5)
+```
+
+
+
+
+```{r fig.width=8, fig.height=4.5}
+VlnPlot(GEX.seur, features = c("nFeature_RNA", "nCount_RNA", "percent.mt","percent.rb"), ncol = 4, pt.size = 0.1, group.by = "SP.info",cols = color.SP)
+VlnPlot(GEX.seur, features = c("nFeature_RNA", "nCount_RNA", "percent.mt","percent.rb"), ncol = 4, pt.size = 0, group.by = "SP.info",cols = color.SP)
+```
+
+
+```{r fig.width=16, fig.height=4.5}
+VlnPlot(GEX.seur, features = c("nFeature_RNA", "nCount_RNA", "percent.mt","percent.rb"), ncol = 4, pt.size = 0.1, group.by = "Anno1",cols =color.A1)
+VlnPlot(GEX.seur, features = c("nFeature_RNA", "nCount_RNA", "percent.mt","percent.rb"), ncol = 4, pt.size = 0, group.by = "Anno1",cols =color.A1)
+```
+
+```{r fig.width=16, fig.height=4.5}
+VlnPlot(GEX.seur, features = c("nFeature_RNA", "nCount_RNA", "percent.mt","percent.rb"), ncol = 4, pt.size = 0.1, group.by = "Anno2",cols =color.A2)
+VlnPlot(GEX.seur, features = c("nFeature_RNA", "nCount_RNA", "percent.mt","percent.rb"), ncol = 4, pt.size = 0, group.by = "Anno2",cols =color.A2)
+```
+
+
+```{r fig.width=17.6,fig.height=4.8}
+plota <- FeatureScatter(GEX.seur, feature1 = "nCount_RNA", feature2 = "percent.mt", group.by = "Anno1",cols =color.A1) 
+             #coord_cartesian(xlim =c(0, 40000), ylim = c(0, 40))
+plotb <- FeatureScatter(GEX.seur, feature1 = "nCount_RNA", feature2 = "nFeature_RNA", group.by = "Anno1",cols =color.A1)
+             #coord_cartesian(xlim =c(0, 40000), ylim = c(0, 4000))
+plotc <- FeatureScatter(GEX.seur, feature1 = "nCount_RNA", feature2 = "percent.rb", group.by = "Anno1",cols =color.A1)
+plota + plotb + plotc
+```
+
+
+```{r fig.width=17.6,fig.height=4.8}
+plota <- FeatureScatter(GEX.seur, feature1 = "nCount_RNA", feature2 = "percent.mt", group.by = "Anno2",cols =color.A2) 
+             #coord_cartesian(xlim =c(0, 40000), ylim = c(0, 40))
+plotb <- FeatureScatter(GEX.seur, feature1 = "nCount_RNA", feature2 = "nFeature_RNA", group.by = "Anno2",cols =color.A2)
+             #coord_cartesian(xlim =c(0, 40000), ylim = c(0, 4000))
+plotc <- FeatureScatter(GEX.seur, feature1 = "nCount_RNA", feature2 = "percent.rb", group.by = "Anno2",cols =color.A2)
+plota + plotb + plotc
+```
+
+### cell composition             
+
+```{r}
+color.stat1 <- color.A1
+names(color.stat1) <- levels(GEX.seur$Anno1)
+
+color.stat2 <- color.A2
+names(color.stat2) <- levels(GEX.seur$Anno2)
+```
+
+
+```{r fig.width=8.5,fig.height=8}
+DimPlot(GEX.seur, reduction = "umap", label = F,group.by = "Anno1", split.by = "SP.info", ncol = 2,
+        cols = color.stat1) 
+```
+
+```{r fig.width=8.2,fig.height=8}
+DimPlot(GEX.seur, reduction = "umap", label = F,group.by = "Anno2", split.by = "SP.info", ncol = 2,
+        cols = color.stat2) 
+```
+
+```{r eval=FALSE, include=FALSE}
+ggsave("../sc10x_steady/cell_composition.Anno1.dot.pdf",
+       plot = DimPlot(GEX.seur, reduction = "umap", label = F,group.by = "Anno1", split.by = "SP.info", ncol = 2,
+        cols = color.stat1) ,
+       width = 8.5, height = 8)
+
+ggsave("../sc10x_steady/cell_composition.Anno2.dot.pdf",
+       plot = DimPlot(GEX.seur, reduction = "umap", label = F,group.by = "Anno2", split.by = "SP.info", ncol = 2,
+        cols = color.stat2)  ,
+       width = 8.2, height = 8)
+
+```
+
+
+```{r}
+table(GEX.seur@meta.data[,c("FB.info","SP.info")])
+```
+
+
+```{r}
+GEX.seur$FB.new <- as.character(GEX.seur$FB.info)
+
+GEX.seur$FB.new[GEX.seur$FB.new %in% c("hashtag6")] <- "SI_CTL"
+GEX.seur$FB.new[GEX.seur$FB.new %in% c("hashtag5")] <- "SI_CKO"
+GEX.seur$FB.new[GEX.seur$FB.new %in% c("hashtag2")] <- "LI_CTL.1"
+GEX.seur$FB.new[GEX.seur$FB.new %in% c("hashtag4")] <- "LI_CTL.2"
+GEX.seur$FB.new[GEX.seur$FB.new %in% c("hashtag1")] <- "LI_CKO.1"
+GEX.seur$FB.new[GEX.seur$FB.new %in% c("hashtag3")] <- "LI_CKO.2"
+
+GEX.seur$FB.new <- factor(GEX.seur$FB.new,
+                          levels = c("SI_CTL","SI_CKO",
+                                     "LI_CTL.1","LI_CTL.2",
+                                     "LI_CKO.1","LI_CKO.2"))
+```
+
+
+
+#### Anno1         
+
+```{r}
+stat.SP <- table(GEX.seur@meta.data[,c("SP.info","Anno1")])
+stat.SP
+```
+
+```{r}
+round(rowRatio(stat.SP),3)
+```
+
+```{r fig.height=6, fig.width=6}
+melt.SP <- reshape2::melt(stat.SP)
+melt.SP$Anno1 <- factor(as.character(melt.SP$Anno1),
+                                levels = rev(levels(GEX.seur$Anno1)))
+
+
+p.SP <- ggplot(melt.SP, aes(SP.info, weight=value, fill=Anno1)) +
+  geom_bar(color="black", width = .7, position = "fill") +
+  labs( y = "Proportion of total (%)",title = "",x="") +
+  scale_fill_manual(values = color.stat1[rev(levels(GEX.seur$Anno1))]) +
+  scale_y_continuous(expand = c(0,0), n.breaks = 6, labels = c(0,20,40,60,80,100)) + 
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 13.6),
+        axis.text.y = element_text(size = 16))+
+  guides(fill = guide_legend(reverse = T, title = ""))
+p.SP
+```
+
+
+
+```{r}
+stat.FB <- table(GEX.seur@meta.data[,c("FB.new","Anno1")])
+stat.FB
+```
+
+
+```{r}
+round(rowRatio(stat.FB),3)
+```
+
+
+```{r fig.height=6, fig.width=6}
+melt.FB <- reshape2::melt(stat.FB)
+#melt.FB <- melt.FB %>% filter(FB.new %in%  paste0("hashtag",1:6))
+melt.FB$FB.new <- factor(as.character(melt.FB$FB.new), levels = levels(GEX.seur$FB.new))
+melt.FB$Anno1 <- factor(as.character(melt.FB$Anno1),
+                                levels = rev(levels(GEX.seur$Anno1)))
+
+p.FB <- ggplot(melt.FB, aes(FB.new, weight=value, fill=Anno1)) +
+  geom_bar(color="black", width = .7, position = "fill") +
+  labs( y = "Proportion of total (%)",title = "",x="") +
+  scale_fill_manual(values = color.stat1[rev(levels(GEX.seur$Anno1))]) +
+  scale_y_continuous(expand = c(0,0), n.breaks = 6, labels = c(0,20,40,60,80,100)) + 
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 13.6),
+        axis.text.y = element_text(size = 16))+
+  guides(fill = guide_legend(reverse = T, title = ""))
+p.FB
+```
+
+
+```{r eval=FALSE, include=FALSE}
+ggsave("../sc10x_steady/cell_composition.Anno1.bar1.pdf",
+       plot = p.SP,
+       width = 6,height = 6)
+
+ggsave("../sc10x_steady/cell_composition.Anno1.bar2.pdf",
+       plot = p.FB,
+       width = 6,height = 6)
+```
+
+
+
+
+
+
+#### Anno2         
+
+```{r}
+stat.SP <- table(GEX.seur@meta.data[,c("SP.info","Anno2")])
+stat.SP
+```
+
+```{r}
+round(rowRatio(stat.SP),3)
+```
+
+```{r fig.height=6, fig.width=6}
+melt.SP <- reshape2::melt(stat.SP)
+melt.SP$Anno2 <- factor(as.character(melt.SP$Anno2),
+                                levels = rev(levels(GEX.seur$Anno2)))
+
+p.SP <- ggplot(melt.SP, aes(SP.info, weight=value, fill=Anno2)) +
+  geom_bar(color="black", width = .7, position = "fill") +
+  labs( y = "Proportion of total (%)",title = "",x="") +
+  scale_fill_manual(values = color.stat2[rev(levels(GEX.seur$Anno2))]) +
+  scale_y_continuous(expand = c(0,0), n.breaks = 6, labels = c(0,20,40,60,80,100)) + 
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 13.6),
+        axis.text.y = element_text(size = 16))+
+  guides(fill = guide_legend(reverse = T, title = ""))
+p.SP
+```
+
+
+```{r}
+stat.FB <- table(GEX.seur@meta.data[,c("FB.new","Anno2")])
+stat.FB
+```
+
+
+```{r}
+round(rowRatio(stat.FB),3)
+```
+
+
+```{r fig.height=6, fig.width=6}
+melt.FB <- reshape2::melt(stat.FB)
+#melt.FB <- melt.FB %>% filter(FB.new %in%  paste0("hashtag",1:8))
+melt.FB$FB.new <- factor(as.character(melt.FB$FB.new), levels = levels(GEX.seur$FB.new))
+melt.FB$Anno2 <- factor(as.character(melt.FB$Anno2),
+                                levels = rev(levels(GEX.seur$Anno2)))
+
+p.FB <- ggplot(melt.FB, aes(FB.new, weight=value, fill=Anno2)) +
+  geom_bar(color="black", width = .7, position = "fill") +
+  labs( y = "Proportion of total (%)",title = "",x="") +
+  scale_fill_manual(values = color.stat2[rev(levels(GEX.seur$Anno2))]) +
+  scale_y_continuous(expand = c(0,0), n.breaks = 6, labels = c(0,20,40,60,80,100)) + 
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 13.6),
+        axis.text.y = element_text(size = 16))+
+  guides(fill = guide_legend(reverse = T, title = ""))
+p.FB
+```
+
+
+
+
+```{r eval=FALSE, include=FALSE}
+ggsave("../sc10x_steady/cell_composition.Anno1.bar1.pdf",
+       plot = p.SP,
+       width = 6,height = 6)
+
+ggsave("../sc10x_steady/cell_composition.Anno2.bar2.pdf",
+       plot = p.FB,
+       width = 6,height = 6)
+```
+
+
+## markers                   
+
+
+
+```{r message=FALSE, warning=FALSE, paged.print=TRUE}
+# find markers for every cluster compared to all remaining cells, report only the positive ones
+Idents(GEX.seur) <- "Anno1"
+
+GEX.markers.pre <- FindAllMarkers(GEX.seur, only.pos = TRUE, min.pct = 0.1,
+                                  test.use = "MAST",
+                                  logfc.threshold = 0.25)
+#GEX.markers.pre <- read.table("./adv0510_steady.markers.Anno1.csv", header = TRUE, sep = ",")
+GEX.markers.pre %>% group_by(cluster) %>% top_n(n = 8, wt = avg_log2FC)
+```
+
+
+```{r eval=FALSE, include=FALSE}
+write.table(GEX.markers.pre, 
+            "./adv0510_steady.markers.Anno1.csv", 
+            col.names = TRUE,
+            row.names = FALSE,
+            quote = F,
+            sep = ",")
+```
+
+
+
+```{r}
+GEX.markers.pre$cluster <- factor(as.character(GEX.markers.pre$cluster),
+                          levels = levels(GEX.seur$Anno1))
+
+markers.pre_t8 <- (GEX.markers.pre %>% group_by(cluster) %>% 
+                  filter(pct.1>0.25) %>%
+                   top_n(n = 8, wt = avg_log2FC) %>%
+                   ungroup() %>%
+  arrange(desc(avg_log2FC*pct.1),gene) %>%
+                             distinct(gene, .keep_all = TRUE) %>%
+                             arrange(cluster,p_val_adj))$gene
+
+markers.pre_t16 <- (GEX.markers.pre %>% group_by(cluster) %>% 
+                  filter(pct.1>0.25) %>%
+                   top_n(n = 16, wt = avg_log2FC) %>%
+                   ungroup() %>%
+  arrange(desc(avg_log2FC*pct.1),gene) %>%
+                             distinct(gene, .keep_all = TRUE) %>%
+                             arrange(cluster,p_val_adj))$gene
+
+markers.pre_t32 <- (GEX.markers.pre %>% group_by(cluster) %>% 
+                  filter(pct.1>0.1) %>%
+                   top_n(n = 32, wt = avg_log2FC) %>%
+                   ungroup() %>%
+  arrange(desc(avg_log2FC*pct.1),gene) %>%
+                             distinct(gene, .keep_all = TRUE) %>%
+                             arrange(cluster,p_val_adj))$gene
+
+markers.pre_t48 <- (GEX.markers.pre %>% group_by(cluster) %>% 
+                  filter(pct.1>0.1) %>%
+                   top_n(n = 48, wt = avg_log2FC) %>%
+                   ungroup() %>%
+  arrange(desc(avg_log2FC*pct.1),gene) %>%
+                             distinct(gene, .keep_all = TRUE) %>%
+                             arrange(cluster,p_val_adj))$gene
+```
+
+
+
+
+```{r fig.width=7.6, fig.height=9.6}
+DotPlot(GEX.seur, features = rev(markers.pre_t48[1:64]))  + coord_flip() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 9.6))
+DotPlot(GEX.seur, features = rev(markers.pre_t48[65:128]))  + coord_flip() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 9.6))
+DotPlot(GEX.seur, features = rev(markers.pre_t48[129:192]))  + coord_flip() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 9.6))
+DotPlot(GEX.seur, features = rev(markers.pre_t48[193:256]))  + coord_flip() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 9.6))
+DotPlot(GEX.seur, features = rev(markers.pre_t48[257:320]))  + coord_flip() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 9.6))
+DotPlot(GEX.seur, features = rev(markers.pre_t48[321:398]))  + coord_flip() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 9.6))
+
+```
+
+
+
+
+## check markers    
+
+
+```{r eval=FALSE, include=FALSE}
+GEX.seur$SP.anno <- factor(paste0(as.character(GEX.seur$SP.info),
+                                  ".",
+                                  as.character(GEX.seur$Anno2)),
+                           levels = c(paste0(levels(GEX.seur$SP.info),
+                                             ".",
+                                             levels(GEX.seur$Anno2)[1]),
+                                      paste0(levels(GEX.seur$SP.info),
+                                             ".",
+                                             levels(GEX.seur$Anno2)[2]),
+                                      paste0(levels(GEX.seur$SP.info),
+                                             ".",
+                                             levels(GEX.seur$Anno2)[3]),
+                                      paste0(levels(GEX.seur$SP.info),
+                                             ".",
+                                             levels(GEX.seur$Anno2)[4])))
+```
+
+         
+
+```{r eval=FALSE, include=FALSE}
+markers.anno_inflam <- list(Tcell=c("Ptprc","Cd3d","Cd3e","Cd3g","Cd4","Cd8a","Cd8b1",
+                             "Klra1","Klra7","Cd7",
+                             "Cd40lg","Ccr9","Socs2"),
+                     NK=c("Klrb1c","Ncr1","Tbx21","Ifng","Eomes"),
+                     ILC1=c("Nkg7","Ccl4","Xcl1","Fasl","Prf1",
+                            "Tyrobp","Klrc1",
+                            "Gzma"),
+                     ILC3=c("Fcer1g","Fcer1a","Fcgr1","Fcgr2b","Fcgr3","Fcgr4","Rorc","Cd93","Kcnk1","Ncoa7","Il1r1","Il22","Tnfsf11","Prr29",
+                            "Slc15a3","Plekhg1","Thy1","Smox","Selenop","Hbegf","Clcn3","Ccdc184","Espn",
+                            "Rell1","Ccng2","Spn","Igf1r","Fhl2","Gpx1","Sdc4","Ckb","Xlr4a",
+                            "Serpinb1a","Irf7",
+                            "Upp1","Cxcl9","Cxcl10","Actn2","Cd226",
+                            "S100a4","S100a6","Lgals1",
+                            "Ffar2","Jaml","Nfkbid","Klf9","Pram1","Tnf",
+                            "Pcp4","Cxcl3",
+                            "Ccr6","Cdc14a","Hmgn3","Cx3cl1","Nmrk1",
+                            "Nrp1","Cntn1","Slc41a3","Vegfa","Il17f",
+                            "Ccr1","Platr3","Tgm3","Kdm4a",
+                            "Irs2"),
+                     ILC2=c("Gata3","Il1rl1","Calca","Areg",
+                            "Il2ra","Il13","Il4","Il5","Klrg1","Csf2","Inpp4b",
+                            "Ptpn13","Il17rb","Hlf","Il9r","Bcl11b","Klk8","Rad50","Ctla2a","Rnf128",
+                            "Hs3st1","Paxbp1","Otulinl","Slain1","Ccr4","Ar",
+                            "Zeb2","Il17a","Fkbp5","Tph1","Tox2","Stab2",
+                            "Il2","Lpcat2","Eepd1","Ccr2","Ccl1",
+                            "Neb","Epas1","Atp8a2","Enpp4","Ret","Ikzf3","Id2","Pdcd1","Hilpda"),
+                     Bcell=c("Cd19","Cd38","Ighm","Cd79a","Cd79b","Ms4a1",
+                             "H2-Aa","H2-Eb1"),
+                     Plasma=c("Mzb1","Sdc1","Xbp1")
+                     #BAS=c("Gata2","Il6","Cpa3","Ms4a2","Mcpt8","Cyp11a1"),
+                     #FIB=c("Dcn","Col1a1","Col1a2","Col3a1","Rgl1")
+                     )
+length(unlist(markers.anno_inflam))
+```
+
+```{r eval=FALSE, fig.height=12.6, fig.width=8.1, include=FALSE}
+DotPlot(GEX.seur, features = rev(as.vector(unlist(markers.anno_inflam))[1:91]), group.by = "SP.anno")  + coord_flip() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 9.6))
+```       
+
+```{r eval=FALSE, fig.height=8.7, fig.width=8.1, include=FALSE}
+DotPlot(GEX.seur, features = rev(as.vector(unlist(markers.anno_inflam))[92:148]), group.by = "SP.anno")  + coord_flip() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 9.6))
+```    
+
+
+
+
+## DEGs            
+
+
+```{r}
+GEX.seur_SI <- subset(GEX.seur, subset= SP.info %in% c("SI_CTL","SI_CKO"))
+GEX.seur_LI <- subset(GEX.seur, subset= SP.info %in% c("LI_CTL","LI_CKO"))
+```
+
+
+```{r}
+Idents(GEX.seur_SI) <- "SP.info"
+Idents(GEX.seur_LI) <- "SP.info"
+
+names_Anno2 <- levels(GEX.seur$Anno2)
+names_Anno2
+```
+
+```{r}
+GEX.seur_SI
+```
+
+```{r}
+GEX.seur_LI
+```
+
+
+### SI                 
+
+
+```{r}
+DEGs_SI <- list()
+
+for(nn in names_Anno2){
+  DEGs_SI[[nn]] <- FindAllMarkers(subset(GEX.seur_SI,subset= Anno2 == nn),
+                                  only.pos = TRUE,
+                                  min.pct = 0.1,
+                                  logfc.threshold = 0.1,
+                                  test.use = "MAST")
+}
+```
+
+
+```{r}
+DEGs_SI.df <- data.frame()
+
+for(nn in names_Anno2){
+  DEGs_SI.df <- rbind(DEGs_SI.df,
+                      data.frame(DEGs_SI[[nn]],
+                                 Anno2=nn))
+}
+```
+
+
+
+```{r eval=FALSE, include=FALSE}
+write.csv(DEGs_SI.df, "../sc10x_steady/DEGs_Anno2.steady.SI_CTLvsCKO.csv")
+```
+
+#### ILC1             
+
+```{r fig.height=6, fig.width=7.2}
+DEGs_SI$ILC1 %>% filter(cluster=="SI_CTL") %>% 
+  mutate(label=ifelse(p_val_adj<0.05,gene,""),
+         sig.=ifelse(p_val_adj<0.05,T,F),
+         padj=ifelse(p_val_adj<1e-50,p_val_adj+1e-50,p_val_adj)) %>%
+  ggplot(aes(y= -log10(padj), x=avg_log2FC, size=pct.1, label=label,fill=sig.)) +
+  geom_point(shape=21, alpha=0.65) +
+  geom_text_repel(size=3, max.overlaps = 500) +
+  scale_fill_manual(values = c("FALSE"="grey","TRUE"="skyblue")) +
+  theme_classic() + labs(title = "ILC1 SI CTL vs CKO, SI CTL hi") +
+  guides(size = guide_legend(order = 2), fill=guide_legend(order = 1, reverse = T))
+```
+
+```{r fig.height=6, fig.width=7.2}
+DEGs_SI$ILC1 %>% filter(cluster=="SI_CKO") %>% 
+  mutate(label=ifelse(p_val_adj<0.05,gene,""),
+         sig.=ifelse(p_val_adj<0.05,T,F),
+         padj=ifelse(p_val_adj<1e-50,p_val_adj+1e-50,p_val_adj)) %>%
+  ggplot(aes(y= -log10(padj), x=avg_log2FC, size=pct.1, label=label,fill=sig.)) +
+  geom_point(shape=21, alpha=0.65) +
+  geom_text_repel(size=3, max.overlaps = 500) +
+  scale_fill_manual(values = c("FALSE"="grey","TRUE"="skyblue")) +
+  theme_classic() + labs(title = "ILC1 SI CTL vs CKO, SI CKO hi") +
+  guides(size = guide_legend(order = 2), fill=guide_legend(order = 1, reverse = T))
+```
+
+
+
+```{r}
+DEGs_SI.combine <- DEGs_SI
+
+DEGs_SI.combine <- lapply(DEGs_SI.combine,function(x){
+  x[x$cluster=="SI_CTL","avg_log2FC"] <- -x[x$cluster=="SI_CTL","avg_log2FC"]
+  x
+})
+```
+
+
+```{r}
+pp.DEG_SI <- list()
+```
+
+
+```{r  fig.height=4, fig.width=4.8}
+pp.DEG_SI[["NK"]] <- DEGs_SI.combine$NK %>% 
+  #filter(cluster=="SI_CTL") %>% 
+  mutate(label=ifelse(p_val_adj<0.05,gene,""),
+         sig.=ifelse(p_val_adj<0.05 & avg_log2FC <0,"CTL",ifelse(p_val_adj<0.05 & avg_log2FC >0,"CKO","None")),
+         padj=ifelse(p_val_adj<1e-50,p_val_adj+1e-50,p_val_adj)) %>%
+  ggplot(aes(y= -log10(padj), x=avg_log2FC, size=pct.1, label=label,fill=sig.)) +
+  geom_point(shape=21, alpha=0.65) +
+  geom_text_repel(size=3, max.overlaps = 500) +
+  scale_fill_manual(values = c("CTL"=as.vector(color.SP[1]),
+                               "CKO"=as.vector(color.SP[2]),
+                               "None"="grey")) +
+  theme_classic() + labs(title = "SI NK DEGs: ") +
+  guides(size = guide_legend(order = 2), fill=guide_legend(order = 1, reverse = F)) +
+  geom_vline(xintercept=c(-0.1,0.1), linetype="dotted")
+pp.DEG_SI[["NK"]]
+```
+
+```{r  fig.height=4, fig.width=4.8}
+pp.DEG_SI[["ILC1"]] <- DEGs_SI.combine$ILC1 %>% 
+  #filter(cluster=="SI_CTL") %>% 
+  mutate(label=ifelse(p_val_adj<0.05,gene,""),
+         sig.=ifelse(p_val_adj<0.05 & avg_log2FC <0,"CTL",ifelse(p_val_adj<0.05 & avg_log2FC >0,"CKO","None")),
+         padj=ifelse(p_val_adj<1e-50,p_val_adj+1e-50,p_val_adj)) %>%
+  ggplot(aes(y= -log10(padj), x=avg_log2FC, size=pct.1, label=label,fill=sig.)) +
+  geom_point(shape=21, alpha=0.65) +
+  geom_text_repel(size=3, max.overlaps = 500) +
+  scale_fill_manual(values = c("CTL"=as.vector(color.SP[1]),
+                               "CKO"=as.vector(color.SP[2]),
+                               "None"="grey")) +
+  theme_classic() + labs(title = "SI ILC1 DEGs: ") +
+  guides(size = guide_legend(order = 2), fill=guide_legend(order = 1, reverse = F)) +
+  geom_vline(xintercept=c(-0.1,0.1), linetype="dotted")
+pp.DEG_SI[["ILC1"]]
+```
+
+
+```{r  fig.height=4, fig.width=4.8}
+pp.DEG_SI[["Ccr6N.ILC3"]] <- DEGs_SI.combine$Ccr6N.ILC3 %>% 
+  #filter(cluster=="SI_CTL") %>% 
+  mutate(label=ifelse(p_val_adj<0.05,gene,""),
+         sig.=ifelse(p_val_adj<0.05 & avg_log2FC <0,"CTL",ifelse(p_val_adj<0.05 & avg_log2FC >0,"CKO","None")),
+         padj=ifelse(p_val_adj<1e-50,p_val_adj+1e-50,p_val_adj)) %>%
+  ggplot(aes(y= -log10(padj), x=avg_log2FC, size=pct.1, label=label,fill=sig.)) +
+  geom_point(shape=21, alpha=0.65) +
+  geom_text_repel(size=3, max.overlaps = 500) +
+  scale_fill_manual(values = c("CTL"=as.vector(color.SP[1]),
+                               "CKO"=as.vector(color.SP[2]),
+                               "None"="grey")) +
+  theme_classic() + labs(title = "SI Ccr6N.ILC3 DEGs: ") +
+  guides(size = guide_legend(order = 2), fill=guide_legend(order = 1, reverse = F)) +
+  geom_vline(xintercept=c(-0.1,0.1), linetype="dotted")
+pp.DEG_SI[["Ccr6N.ILC3"]]
+```
+
+```{r fig.height=4, fig.width=4.8}
+pp.DEG_SI[["Ccr6P.ILC3"]] <- DEGs_SI.combine$Ccr6P.ILC3 %>% 
+  #filter(cluster=="SI_CTL") %>% 
+  mutate(label=ifelse(p_val_adj<0.05,gene,""),
+         sig.=ifelse(p_val_adj<0.05 & avg_log2FC <0,"CTL",ifelse(p_val_adj<0.05 & avg_log2FC >0,"CKO","None")),
+         padj=ifelse(p_val_adj<1e-50,p_val_adj+1e-50,p_val_adj)) %>%
+  ggplot(aes(y= -log10(padj), x=avg_log2FC, size=pct.1, label=label,fill=sig.)) +
+  geom_point(shape=21, alpha=0.65) +
+  geom_text_repel(size=3, max.overlaps = 500) +
+  scale_fill_manual(values = c("CTL"=as.vector(color.SP[1]),
+                               "CKO"=as.vector(color.SP[2]),
+                               "None"="grey")) +
+  theme_classic() + labs(title = "SI Ccr6P.ILC3 DEGs: ") +
+  guides(size = guide_legend(order = 2), fill=guide_legend(order = 1, reverse = F)) +
+  geom_vline(xintercept=c(-0.1,0.1), linetype="dotted")
+pp.DEG_SI[["Ccr6P.ILC3"]]
+```
+
+
+```{r  fig.height=4, fig.width=4.8}
+pp.DEG_SI[["ILC2"]] <- DEGs_SI.combine$ILC2 %>% 
+  #filter(cluster=="SI_CTL") %>% 
+  mutate(label=ifelse(p_val_adj<0.05,gene,""),
+         sig.=ifelse(p_val_adj<0.05 & avg_log2FC <0,"CTL",ifelse(p_val_adj<0.05 & avg_log2FC >0,"CKO","None")),
+         padj=ifelse(p_val_adj<1e-50,p_val_adj+1e-50,p_val_adj)) %>%
+  ggplot(aes(y= -log10(padj), x=avg_log2FC, size=pct.1, label=label,fill=sig.)) +
+  geom_point(shape=21, alpha=0.65) +
+  geom_text_repel(size=3, max.overlaps = 500) +
+  scale_fill_manual(values = c("CTL"=as.vector(color.SP[1]),
+                               "CKO"=as.vector(color.SP[2]),
+                               "None"="grey")) +
+  theme_classic() + labs(title = "SI ILC2 DEGs: ") +
+  guides(size = guide_legend(order = 2), fill=guide_legend(order = 1, reverse = F)) +
+  geom_vline(xintercept=c(-0.1,0.1), linetype="dotted")
+pp.DEG_SI[["ILC2"]]
+```
+
+
+```{r eval=FALSE, include=FALSE}
+for(nn in names(pp.DEG_SI)){
+  ggsave(paste0("../sc10x_steady/DEGs/DEGs.SI_",nn,".pdf"),
+         plot = pp.DEG_SI[[nn]],
+         width = 4.8,height = 4)
+}
+
+```
+
+
+
+### LI                    
+
+```{r}
+DEGs_LI <- list()
+
+for(nn in names_Anno2){
+  DEGs_LI[[nn]] <- FindAllMarkers(subset(GEX.seur_LI,subset= Anno2 == nn),
+                                  only.pos = TRUE,
+                                  min.pct = 0.1,
+                                  logfc.threshold = 0.1,
+                                  test.use = "MAST")
+}
+```
+
+
+```{r}
+DEGs_LI.df <- data.frame()
+
+for(nn in names_Anno2){
+  DEGs_LI.df <- rbind(DEGs_LI.df,
+                      data.frame(DEGs_LI[[nn]],
+                                 Anno2=nn))
+}
+```
+
+
+
+```{r eval=FALSE, include=FALSE}
+write.csv(DEGs_LI.df, "../sc10x_steady/DEGs_Anno2.steady.LI_CTLvsCKO.csv")
+```
+
+#### ILC1             
+
+```{r fig.height=6, fig.width=7.2}
+DEGs_LI$ILC1 %>% filter(cluster=="LI_CTL") %>% 
+  mutate(label=ifelse(p_val_adj<0.05,gene,""),
+         sig.=ifelse(p_val_adj<0.05,T,F),
+         padj=ifelse(p_val_adj<1e-50,p_val_adj+1e-50,p_val_adj)) %>%
+  ggplot(aes(y= -log10(padj), x=avg_log2FC, size=pct.1, label=label,fill=sig.)) +
+  geom_point(shape=21, alpha=0.65) +
+  geom_text_repel(size=3, max.overlaps = 500) +
+  scale_fill_manual(values = c("FALSE"="grey","TRUE"="skyblue")) +
+  theme_classic() + labs(title = "ILC1 LI CTL vs CKO, LI CTL hi") +
+  guides(size = guide_legend(order = 2), fill=guide_legend(order = 1, reverse = T))
+```
+
+```{r fig.height=6, fig.width=7.2}
+DEGs_LI$ILC1 %>% filter(cluster=="LI_CKO") %>% 
+  mutate(label=ifelse(p_val_adj<0.05,gene,""),
+         sig.=ifelse(p_val_adj<0.05,T,F),
+         padj=ifelse(p_val_adj<1e-50,p_val_adj+1e-50,p_val_adj)) %>%
+  ggplot(aes(y= -log10(padj), x=avg_log2FC, size=pct.1, label=label,fill=sig.)) +
+  geom_point(shape=21, alpha=0.65) +
+  geom_text_repel(size=3, max.overlaps = 500) +
+  scale_fill_manual(values = c("FALSE"="grey","TRUE"="skyblue")) +
+  theme_classic() + labs(title = "ILC1 LI CTL vs CKO, LI CKO hi") +
+  guides(size = guide_legend(order = 2), fill=guide_legend(order = 1, reverse = T))
+```
+
+
+```{r}
+DEGs_LI.combine <- DEGs_LI
+
+DEGs_LI.combine <- lapply(DEGs_LI.combine,function(x){
+  x[x$cluster=="LI_CTL","avg_log2FC"] <- -x[x$cluster=="LI_CTL","avg_log2FC"]
+  x
+})
+```
+
+
+```{r}
+pp.DEG_LI <- list()
+```
+
+
+```{r  fig.height=4, fig.width=4.8}
+pp.DEG_LI[["NK"]] <- DEGs_LI.combine$NK %>% 
+  #filter(cluster=="LI_CTL") %>% 
+  mutate(label=ifelse(p_val_adj<0.05,gene,""),
+         sig.=ifelse(p_val_adj<0.05 & avg_log2FC <0,"CTL",ifelse(p_val_adj<0.05 & avg_log2FC >0,"CKO","None")),
+         padj=ifelse(p_val_adj<1e-50,p_val_adj+1e-50,p_val_adj)) %>%
+  ggplot(aes(y= -log10(padj), x=avg_log2FC, size=pct.1, label=label,fill=sig.)) +
+  geom_point(shape=21, alpha=0.65) +
+  geom_text_repel(size=3, max.overlaps = 500) +
+  scale_fill_manual(values = c("CTL"=as.vector(color.SP[3]),
+                               "CKO"=as.vector(color.SP[4]),
+                               "None"="grey")) +
+  theme_classic() + labs(title = "LI NK DEGs: ") +
+  guides(size = guide_legend(order = 2), fill=guide_legend(order = 1, reverse = F)) +
+  geom_vline(xintercept=c(-0.1,0.1), linetype="dotted")
+pp.DEG_LI[["NK"]]
+```
+
+```{r  fig.height=4, fig.width=4.8}
+pp.DEG_LI[["ILC1"]] <- DEGs_LI.combine$ILC1 %>% 
+  #filter(cluster=="LI_CTL") %>% 
+  mutate(label=ifelse(p_val_adj<0.05,gene,""),
+         sig.=ifelse(p_val_adj<0.05 & avg_log2FC <0,"CTL",ifelse(p_val_adj<0.05 & avg_log2FC >0,"CKO","None")),
+         padj=ifelse(p_val_adj<1e-50,p_val_adj+1e-50,p_val_adj)) %>%
+  ggplot(aes(y= -log10(padj), x=avg_log2FC, size=pct.1, label=label,fill=sig.)) +
+  geom_point(shape=21, alpha=0.65) +
+  geom_text_repel(size=3, max.overlaps = 500) +
+  scale_fill_manual(values = c("CTL"=as.vector(color.SP[3]),
+                               "CKO"=as.vector(color.SP[4]),
+                               "None"="grey")) +
+  theme_classic() + labs(title = "LI ILC1 DEGs: ") +
+  guides(size = guide_legend(order = 2), fill=guide_legend(order = 1, reverse = F)) +
+  geom_vline(xintercept=c(-0.1,0.1), linetype="dotted")
+pp.DEG_LI[["ILC1"]]
+```
+
+```{r  fig.height=4, fig.width=4.8}
+pp.DEG_LI[["Ccr6N.ILC3"]] <- DEGs_LI.combine$Ccr6N.ILC3 %>% 
+  #filter(cluster=="LI_CTL") %>% 
+  mutate(label=ifelse(p_val_adj<0.05,gene,""),
+         sig.=ifelse(p_val_adj<0.05 & avg_log2FC <0,"CTL",ifelse(p_val_adj<0.05 & avg_log2FC >0,"CKO","None")),
+         padj=ifelse(p_val_adj<1e-50,p_val_adj+1e-50,p_val_adj)) %>%
+  ggplot(aes(y= -log10(padj), x=avg_log2FC, size=pct.1, label=label,fill=sig.)) +
+  geom_point(shape=21, alpha=0.65) +
+  geom_text_repel(size=3, max.overlaps = 500) +
+  scale_fill_manual(values = c("CTL"=as.vector(color.SP[3]),
+                               "CKO"=as.vector(color.SP[4]),
+                               "None"="grey")) +
+  theme_classic() + labs(title = "LI Ccr6N.ILC3 DEGs: ") +
+  guides(size = guide_legend(order = 2), fill=guide_legend(order = 1, reverse = F)) +
+  geom_vline(xintercept=c(-0.1,0.1), linetype="dotted")
+pp.DEG_LI[["Ccr6N.ILC3"]]
+```
+
+
+```{r  fig.height=4, fig.width=4.8}
+pp.DEG_LI[["Ccr6P.ILC3"]] <- DEGs_LI.combine$Ccr6P.ILC3 %>% 
+  #filter(cluster=="LI_CTL") %>% 
+  mutate(label=ifelse(p_val_adj<0.05,gene,""),
+         sig.=ifelse(p_val_adj<0.05 & avg_log2FC <0,"CTL",ifelse(p_val_adj<0.05 & avg_log2FC >0,"CKO","None")),
+         padj=ifelse(p_val_adj<1e-50,p_val_adj+1e-50,p_val_adj)) %>%
+  ggplot(aes(y= -log10(padj), x=avg_log2FC, size=pct.1, label=label,fill=sig.)) +
+  geom_point(shape=21, alpha=0.65) +
+  geom_text_repel(size=3, max.overlaps = 500) +
+  scale_fill_manual(values = c("CTL"=as.vector(color.SP[3]),
+                               "CKO"=as.vector(color.SP[4]),
+                               "None"="grey")) +
+  theme_classic() + labs(title = "LI Ccr6P.ILC3 DEGs: ") +
+  guides(size = guide_legend(order = 2), fill=guide_legend(order = 1, reverse = F)) +
+  geom_vline(xintercept=c(-0.1,0.1), linetype="dotted")
+pp.DEG_LI[["Ccr6P.ILC3"]]
+```
+
+
+```{r  fig.height=4, fig.width=4.8}
+pp.DEG_LI[["ILC2"]] <- DEGs_LI.combine$ILC2 %>% 
+  #filter(cluster=="LI_CTL") %>% 
+  mutate(label=ifelse(p_val_adj<0.05,gene,""),
+         sig.=ifelse(p_val_adj<0.05 & avg_log2FC <0,"CTL",ifelse(p_val_adj<0.05 & avg_log2FC >0,"CKO","None")),
+         padj=ifelse(p_val_adj<1e-50,p_val_adj+1e-50,p_val_adj)) %>%
+  ggplot(aes(y= -log10(padj), x=avg_log2FC, size=pct.1, label=label,fill=sig.)) +
+  geom_point(shape=21, alpha=0.65) +
+  geom_text_repel(size=3, max.overlaps = 500) +
+  scale_fill_manual(values = c("CTL"=as.vector(color.SP[3]),
+                               "CKO"=as.vector(color.SP[4]),
+                               "None"="grey")) +
+  theme_classic() + labs(title = "LI ILC2 DEGs: ") +
+  guides(size = guide_legend(order = 2), fill=guide_legend(order = 1, reverse = F)) +
+  geom_vline(xintercept=c(-0.1,0.1), linetype="dotted")
+pp.DEG_LI[["ILC2"]]
+```
+
+```{r eval=FALSE, include=FALSE}
+for(nn in names(pp.DEG_LI)){
+  ggsave(paste0("../sc10x_steady/DEGs/DEGs.LI_",nn,".pdf"),
+         plot = pp.DEG_LI[[nn]],
+         width = 4.8,height = 4)
+}
+
+```
+
+
+### DEGs plot                    
+
+```{r}
+pp1 <- list()
+pp2 <- list()
+```
+
+
+```{r fig.height=4, fig.width=4.5, message=FALSE, warning=FALSE}
+pp1[["Fcer1g"]] <- VlnPlot(subset(GEX.seur, subset= Anno2== "Ccr6N.ILC3"), 
+        group.by = "SP.info", cols = color.SP, features = "Fcer1g", pt.size = 0) + 
+  geom_violin(draw_quantiles=c(0.25,0.75),trim = T, scale = "width") +
+  ggbeeswarm::geom_quasirandom(size = 0.01, width = 0.2, alpha = 0.3) +
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="black") + ylim(c(0,4.8)) + 
+  ggpubr::stat_compare_means(aes(lable = ..p.signif..), 
+                               method = "wilcox.test",
+                               comparisons = list(c("SI_CTL","SI_CKO"),
+                                                  c("LI_CTL","LI_CKO"),
+                                                  c("SI_CTL","LI_CTL"),
+                                                  c("SI_CKO","LI_CKO")),
+                               label.y = c(3.75,3.75,4.15,4.6),
+                               size=2.8) + 
+  labs(title = "Ccr6N.ILC3", x="", y="Fcer1g") 
+pp1[["Fcer1g"]]
+```
+
+```{r}
+pf.DEG <- function(subobj,feature){
+  VlnPlot(subset(GEX.seur, subset= Anno2== subobj), 
+        group.by = "SP.info", cols = color.SP, features = feature, pt.size = 0) + 
+  geom_violin(draw_quantiles=c(0.25,0.75),trim = T, scale = "width") +
+  ggbeeswarm::geom_quasirandom(size = 0.01, width = 0.2, alpha = 0.3) +
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="black") + ylim(c(0,4.8)) + 
+  ggpubr::stat_compare_means(aes(lable = ..p.signif..), 
+                               method = "wilcox.test",
+                               comparisons = list(c("SI_CTL","SI_CKO"),
+                                                  c("LI_CTL","LI_CKO"),
+                                                  c("SI_CTL","LI_CTL"),
+                                                  c("SI_CKO","LI_CKO")),
+                               label.y = c(3.75,3.75,4.15,4.6),
+                               size=2.8) + 
+  labs(title = subobj, x="", y=feature) 
+}
+```
+
+```{r fig.height=4, fig.width=4.5, message=FALSE, warning=FALSE}
+pf.DEG("Ccr6N.ILC3","Fcer1g")
+pf.DEG("Ccr6N.ILC3","Fcgr3")
+pf.DEG("Ccr6N.ILC3","Ncr1")
+pf.DEG("Ccr6N.ILC3","Ccr6")
+
+pf.DEG("Ccr6P.ILC3","Fcer1g")
+pf.DEG("Ccr6P.ILC3","Fcgr3")
+pf.DEG("Ccr6P.ILC3","Ncr1")
+pf.DEG("Ccr6P.ILC3","Ccr6")
+```
+
+
+```{r eval=FALSE, include=FALSE}
+for(mm in c("Fcer1g","Fcgr3","Ncr1","Ccr6")){
+  ggsave(paste0("../sc10x_steady/markers/SI_LI/SI_LI.Ccr6N.ILC3.",mm,".pdf"),
+         plot = pf.DEG("Ccr6N.ILC3",mm),
+         width = 4.5, height = 4)
+}
+
+for(mm in c("Fcer1g","Fcgr3","Ncr1","Ccr6")){
+  ggsave(paste0("../sc10x_steady/markers/SI_LI/SI_LI.Ccr6P.ILC3.",mm,".pdf"),
+         plot = pf.DEG("Ccr6P.ILC3",mm),
+         width = 4.5, height = 4)
+}
+```
+
+
+
+```{r}
+pf.DEG_SI <- function(subobj,feature){
+  VlnPlot(subset(GEX.seur, subset= Anno2== subobj & SP.info %in% c("SI_CTL","SI_CKO")), 
+        group.by = "SP.info", cols = color.SP[1:2], features = feature, pt.size = 0) + 
+  geom_violin(draw_quantiles=c(0.25,0.75),trim = T, scale = "width") +
+  ggbeeswarm::geom_quasirandom(size = 0.01, width = 0.2, alpha = 0.3) +
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="black") + ylim(c(0,4)) + 
+  ggpubr::stat_compare_means(aes(lable = ..p.signif..), 
+                               method = "wilcox.test", #method.args = list(exact=TRUE),
+                               comparisons = list(c("SI_CTL","SI_CKO")),
+                               label.y = c(3.75),
+                               size=3.5) + 
+  labs(title = subobj, x="", y=feature) 
+}
+```
+
+```{r fig.height=4, fig.width=3.5, message=FALSE, warning=FALSE}
+pf.DEG_SI("Ccr6N.ILC3","Fcer1g")
+pf.DEG_SI("Ccr6N.ILC3","Fcgr3")
+pf.DEG_SI("Ccr6N.ILC3","Ncr1")
+pf.DEG_SI("Ccr6N.ILC3","Ccr6")
+
+pf.DEG_SI("Ccr6P.ILC3","Fcer1g")
+pf.DEG_SI("Ccr6P.ILC3","Fcgr3")
+pf.DEG_SI("Ccr6P.ILC3","Ncr1")
+pf.DEG_SI("Ccr6P.ILC3","Ccr6")
+```
+
+
+```{r eval=FALSE, include=FALSE}
+for(mm in c("Fcer1g","Fcgr3","Ncr1","Ccr6")){
+  ggsave(paste0("../sc10x_steady/markers/SI/SI.Ccr6N.ILC3.",mm,".pdf"),
+         plot = pf.DEG_SI("Ccr6N.ILC3",mm),
+         width = 3.5, height = 4)
+}
+
+for(mm in c("Fcer1g","Fcgr3","Ncr1","Ccr6")){
+  ggsave(paste0("../sc10x_steady/markers/SI/SI.Ccr6P.ILC3.",mm,".pdf"),
+         plot = pf.DEG_SI("Ccr6P.ILC3",mm),
+         width = 3.5, height = 4)
+}
+```
+
+
+
+
+```{r}
+pf.DEG_LI <- function(subobj,feature){
+  VlnPlot(subset(GEX.seur, subset= Anno2== subobj & SP.info %in% c("LI_CTL","LI_CKO")), 
+        group.by = "SP.info", cols = color.SP[3:4], features = feature, pt.size = 0) + 
+  geom_violin(draw_quantiles=c(0.25,0.75),trim = T, scale = "width") +
+  ggbeeswarm::geom_quasirandom(size = 0.01, width = 0.2, alpha = 0.3) +
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="black") + ylim(c(0,4)) + 
+  ggpubr::stat_compare_means(aes(lable = ..p.signif..), 
+                               method = "wilcox.test",
+                               comparisons = list(c("LI_CTL","LI_CKO")),
+                               label.y = c(3.75),
+                               size=3.5) + 
+  labs(title = subobj, x="", y=feature) 
+}
+```
+
+```{r fig.height=4, fig.width=3.5, message=FALSE, warning=FALSE}
+pf.DEG_LI("Ccr6N.ILC3","Fcer1g")
+pf.DEG_LI("Ccr6N.ILC3","Fcgr3")
+pf.DEG_LI("Ccr6N.ILC3","Ncr1")
+pf.DEG_LI("Ccr6N.ILC3","Ccr6")
+
+pf.DEG_LI("Ccr6P.ILC3","Fcer1g")
+pf.DEG_LI("Ccr6P.ILC3","Fcgr3")
+pf.DEG_LI("Ccr6P.ILC3","Ncr1")
+pf.DEG_LI("Ccr6P.ILC3","Ccr6")
+```
+
+
+```{r eval=FALSE, include=FALSE}
+for(mm in c("Fcer1g","Fcgr3","Ncr1","Ccr6")){
+  ggsave(paste0("../sc10x_steady/markers/LI/LI.Ccr6N.ILC3.",mm,".pdf"),
+         plot = pf.DEG_LI("Ccr6N.ILC3",mm),
+         width = 3.5, height = 4)
+}
+
+for(mm in c("Fcer1g","Fcgr3","Ncr1","Ccr6")){
+  ggsave(paste0("../sc10x_steady/markers/LI/LI.Ccr6P.ILC3.",mm,".pdf"),
+         plot = pf.DEG_LI("Ccr6P.ILC3",mm),
+         width = 3.5, height = 4)
+}
+```
+
+
+
+#### plotmod                
+
+20230620 to modify the plot in fig.1J and fig.S1L   
+
+
+##### SI            
+
+```{r}
+pf.DEG_SI.mod <- function(subobj,feature){
+  VlnPlot(subset(GEX.seur, subset= Anno2== subobj & SP.info %in% c("SI_CTL","SI_CKO")), 
+        group.by = "SP.info", cols = color.SP[1:2], features = feature, pt.size = 0) + 
+  geom_violin(draw_quantiles=c(0.25,0.75),trim = T, scale = "width") +
+  #ggbeeswarm::geom_quasirandom(size = 0.01, width = 0.2, alpha = 0.3) +
+    geom_jitter(size=0.01,width=0.2, alph=0.3)+
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="black") + ylim(c(0,3)) + 
+  ggpubr::stat_compare_means(aes(lable = ..p.signif..), 
+                               method = "wilcox.test", #method.args = list(exact=TRUE),
+                               comparisons = list(c("SI_CTL","SI_CKO")),
+                               label.y = c(2.75),
+                               size=3.5) + 
+  labs(title = subobj, x="", y=feature) 
+}
+```
+
+```{r fig.height=4, fig.width=3.5, message=FALSE, warning=FALSE}
+pf.DEG_SI.mod("Ccr6N.ILC3","Fcer1g")
+pf.DEG_SI.mod("Ccr6N.ILC3","Fcgr3")
+pf.DEG_SI.mod("Ccr6N.ILC3","Ncr1")
+pf.DEG_SI.mod("Ccr6N.ILC3","Ccr6")
+
+pf.DEG_SI.mod("Ccr6P.ILC3","Fcer1g")
+pf.DEG_SI.mod("Ccr6P.ILC3","Fcgr3")
+pf.DEG_SI.mod("Ccr6P.ILC3","Ncr1")
+pf.DEG_SI.mod("Ccr6P.ILC3","Ccr6")
+```
+
+
+```{r eval=FALSE, include=FALSE}
+for(mm in c("Fcer1g","Fcgr3","Ncr1","Ccr6")){
+  ggsave(paste0("../figures.mod20230620/SI/SI.Ccr6N.ILC3.",mm,".pdf"),
+         plot = pf.DEG_SI.mod("Ccr6N.ILC3",mm),
+         width = 3.5, height = 3.2)
+}
+
+for(mm in c("Fcer1g","Fcgr3","Ncr1","Ccr6")){
+  ggsave(paste0("../figures.mod20230620/SI/SI.Ccr6P.ILC3.",mm,".pdf"),
+         plot = pf.DEG_SI.mod("Ccr6P.ILC3",mm),
+         width = 3.5, height = 3.2)
+}
+```
+
+
+##### LI            
+
+```{r}
+pf.DEG_LI.mod <- function(subobj,feature){
+  VlnPlot(subset(GEX.seur, subset= Anno2== subobj & SP.info %in% c("LI_CTL","LI_CKO")), 
+        group.by = "SP.info", cols = color.SP[3:4], features = feature, pt.size = 0) + 
+  geom_violin(draw_quantiles=c(0.25,0.75),trim = T, scale = "width") +
+  #ggbeeswarm::geom_quasirandom(size = 0.01, width = 0.2, alpha = 0.3) +
+    geom_jitter(size=0.01,width=0.2, alph=0.3)+
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="black") + ylim(c(0,3)) + 
+  ggpubr::stat_compare_means(aes(lable = ..p.signif..), 
+                               method = "wilcox.test",
+                               comparisons = list(c("LI_CTL","LI_CKO")),
+                               label.y = c(2.75),
+                               size=3.5) + 
+  labs(title = subobj, x="", y=feature) 
+}
+```
+
+```{r fig.height=4, fig.width=3.5, message=FALSE, warning=FALSE}
+pf.DEG_LI.mod("Ccr6N.ILC3","Fcer1g")
+pf.DEG_LI.mod("Ccr6N.ILC3","Fcgr3")
+pf.DEG_LI.mod("Ccr6N.ILC3","Ncr1")
+pf.DEG_LI.mod("Ccr6N.ILC3","Ccr6")
+
+pf.DEG_LI.mod("Ccr6P.ILC3","Fcer1g")
+pf.DEG_LI.mod("Ccr6P.ILC3","Fcgr3")
+pf.DEG_LI.mod("Ccr6P.ILC3","Ncr1")
+pf.DEG_LI.mod("Ccr6P.ILC3","Ccr6")
+```
+
+
+```{r eval=FALSE, include=FALSE}
+for(mm in c("Fcer1g","Fcgr3","Ncr1","Ccr6")){
+  ggsave(paste0("../figures.mod20230620/LI/LI.Ccr6N.ILC3.",mm,".pdf"),
+         plot = pf.DEG_LI.mod("Ccr6N.ILC3",mm),
+         #width = 3.5, height = 4
+         width = 3.5, height = 3.2)
+}
+
+for(mm in c("Fcer1g","Fcgr3","Ncr1","Ccr6")){
+  ggsave(paste0("../figures.mod20230620/LI/LI.Ccr6P.ILC3.",mm,".pdf"),
+         plot = pf.DEG_LI.mod("Ccr6P.ILC3",mm),
+         width = 3.5, height = 3.2)
+}
+```
+
+
+
+#### SI           
+
+```{r paged.print=FALSE}
+DEGs_SI.df %>% filter(p_val_adj < 0.05)
+```
+
+
+```{r fig.width=8.1, fig.height=3.7}
+DotPlot(GEX.seur, features = rev((DEGs_SI.df %>% filter(p_val_adj < 0.05) %>% filter(Anno2=="ILC1"))$gene), group.by = "SP.anno")  + coord_flip() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 9.6)) + labs(title = "DEGs of SI ILC1")
+``` 
+
+```{r fig.width=8.1, fig.height=7.5}
+DotPlot(GEX.seur, features = rev((DEGs_SI.df %>% filter(p_val_adj < 0.05) %>% filter(Anno2=="ILC3_A"))$gene), group.by = "SP.anno")  + coord_flip() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 9.6)) + labs(title = "DEGs of SI ILC3_A")
+``` 
+
+```{r fig.width=8.1, fig.height=4.5}
+DotPlot(GEX.seur, features = rev((DEGs_SI.df %>% filter(p_val_adj < 0.05) %>% filter(Anno2=="ILC3_B"))$gene), group.by = "SP.anno")  + coord_flip() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 9.6)) + labs(title = "DEGs of SI ILC3_B")
+``` 
+
+```{r fig.width=8.1, fig.height=5.5}
+DotPlot(GEX.seur, features = rev((DEGs_SI.df %>% filter(p_val_adj < 0.05) %>% filter(Anno2=="ILC2"))$gene), group.by = "SP.anno")  + coord_flip() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 9.6)) + labs(title = "DEGs of SI ILC2")
+``` 
+
+```{r}
+vln_df.SI_ILC3_A <- data.frame(t(GEX.seur@assays$RNA@data[(DEGs_SI.df %>% filter(p_val_adj < 0.05) %>% filter(Anno2=="ILC3_A"))$gene,]),
+                     Sample=GEX.seur$SP.info,
+                     Anno=GEX.seur$Anno2,check.names = F)
+dim(vln_df.SI_ILC3_A)
+```
+
+```{r fig.width=9, fig.height=6}
+cowplot::plot_grid(
+ggplot(vln_df.SI_ILC3_A %>% filter(Anno == "ILC1"), aes(x = Sample,fill=Sample, y= Fcer1g)) +
+  geom_violin(draw_quantiles=c(0.25,0.75),trim = T, scale = "width") +
+  ggbeeswarm::geom_quasirandom(size = 0.01, width = 0.2, alpha = 0.3) +
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="black") +
+    ggpubr::stat_compare_means(aes(lable = ..p.signif..), 
+                               method = "wilcox.test",
+                               comparisons = list(c("SI_CTL","SI_CKO"),
+                                                  c("LI_CTL","LI_CKO"),
+                                                  c("SI_CTL","LI_CTL"),
+                                                  c("SI_CKO","LI_CKO")),
+                               label.y = c(5.5,5.5,6,6.5),
+                               size=2.5) +
+  theme_classic() + scale_fill_manual(values = c("#7CAE00","#F8766D","#00BFC4","#C77CFF")) +
+  theme(axis.text.x = element_blank(),
+        axis.title.x = element_blank()) + labs(title = "ILC1"),
+
+ggplot(vln_df.SI_ILC3_A %>% filter(Anno == "ILC2"), aes(x = Sample,fill=Sample, y= Fcer1g)) +
+  geom_violin(draw_quantiles=c(0.25,0.75),trim = T, scale = "width") +
+  ggbeeswarm::geom_quasirandom(size = 0.01, width = 0.2, alpha = 0.3) +
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="black") +
+    ggpubr::stat_compare_means(aes(lable = ..p.signif..), 
+                               method = "wilcox.test",
+                               comparisons = list(c("SI_CTL","SI_CKO"),
+                                                  c("LI_CTL","LI_CKO"),
+                                                  c("SI_CTL","LI_CTL"),
+                                                  c("SI_CKO","LI_CKO")),
+                               label.y = c(5.5,5.5,6,6.5),
+                               size=2.5) +
+  theme_classic() +  scale_fill_manual(values = c("#7CAE00","#F8766D","#00BFC4","#C77CFF")) +
+  theme(axis.text.x = element_blank(),
+        axis.title.x = element_blank()) + labs(title = "ILC2"),
+
+ggplot(vln_df.SI_ILC3_A %>% filter(Anno == "ILC3_A"), aes(x = Sample,fill=Sample, y= Fcer1g)) +
+  geom_violin(draw_quantiles=c(0.25,0.75),trim = T, scale = "width") +
+  ggbeeswarm::geom_quasirandom(size = 0.01, width = 0.2, alpha = 0.3) +
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="black") +
+    ggpubr::stat_compare_means(aes(lable = ..p.signif..), 
+                               method = "wilcox.test",
+                               comparisons = list(c("SI_CTL","SI_CKO"),
+                                                  c("LI_CTL","LI_CKO"),
+                                                  c("SI_CTL","LI_CTL"),
+                                                  c("SI_CKO","LI_CKO")),
+                               label.y = c(5.5,5.5,6,6.5),
+                               size=2.5) +
+  theme_classic() +  scale_fill_manual(values = c("#7CAE00","#F8766D","#00BFC4","#C77CFF")) +
+  theme(axis.text.x = element_blank(),
+        axis.title.x = element_blank()) + labs(title = "ILC3_A"),
+
+ggplot(vln_df.SI_ILC3_A %>% filter(Anno == "ILC3_B"), aes(x = Sample,fill=Sample, y= Fcer1g)) +
+  geom_violin(draw_quantiles=c(0.25,0.75),trim = T, scale = "width") +
+  ggbeeswarm::geom_quasirandom(size = 0.01, width = 0.2, alpha = 0.3) +
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="black") +
+    ggpubr::stat_compare_means(aes(lable = ..p.signif..), 
+                               method = "wilcox.test",
+                               comparisons = list(c("SI_CTL","SI_CKO"),
+                                                  c("LI_CTL","LI_CKO"),
+                                                  c("SI_CTL","LI_CTL"),
+                                                  c("SI_CKO","LI_CKO")),
+                               label.y = c(5.5,5.5,6,6.5),
+                               size=2.5) +
+  theme_classic() +  scale_fill_manual(values = c("#7CAE00","#F8766D","#00BFC4","#C77CFF")) +
+  theme(axis.text.x = element_blank(),
+        axis.title.x = element_blank()) + labs(title = "ILC3_B"),
+ncol = 2)
+```
+
+
+```{r eval=FALSE, include=FALSE}
+for(ggg in (DEGs_SI.df %>% filter(p_val_adj < 0.05) %>% filter(Anno2=="ILC3_A"))$gene){
+  ggsave(paste0("./adv0510_steady/ILC3_A/DEGs_SI.ILC3_A.",ggg,".png"),
+         width = 9, height = 6,
+         plot = cowplot::plot_grid(
+ggplot(vln_df.SI_ILC3_A %>% filter(Anno == "ILC1"), aes(x = Sample,fill=Sample, y= get(ggg))) +
+  geom_violin(draw_quantiles=c(0.25,0.75),trim = T, scale = "width") +
+  ggbeeswarm::geom_quasirandom(size = 0.01, width = 0.2, alpha = 0.3) +
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="black") +
+    ggpubr::stat_compare_means(aes(lable = ..p.signif..), 
+                               method = "wilcox.test",
+                               comparisons = list(c("SI_CTL","SI_CKO"),
+                                                  c("LI_CTL","LI_CKO"),
+                                                  c("SI_CTL","LI_CTL"),
+                                                  c("SI_CKO","LI_CKO")),
+                               label.y = c(5.5,5.5,6,6.5),
+                               size=2.5) +
+  theme_classic() + scale_fill_manual(values = c("#7CAE00","#F8766D","#00BFC4","#C77CFF")) +
+  theme(axis.text.x = element_blank(),
+        axis.title.x = element_blank()) + labs(title = "ILC1", y=ggg),
+
+ggplot(vln_df.SI_ILC3_A %>% filter(Anno == "ILC2"), aes(x = Sample,fill=Sample, y= get(ggg))) +
+  geom_violin(draw_quantiles=c(0.25,0.75),trim = T, scale = "width") +
+  ggbeeswarm::geom_quasirandom(size = 0.01, width = 0.2, alpha = 0.3) +
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="black") +
+    ggpubr::stat_compare_means(aes(lable = ..p.signif..), 
+                               method = "wilcox.test",
+                               comparisons = list(c("SI_CTL","SI_CKO"),
+                                                  c("LI_CTL","LI_CKO"),
+                                                  c("SI_CTL","LI_CTL"),
+                                                  c("SI_CKO","LI_CKO")),
+                               label.y = c(5.5,5.5,6,6.5),
+                               size=2.5) +
+  theme_classic() +  scale_fill_manual(values = c("#7CAE00","#F8766D","#00BFC4","#C77CFF")) +
+  theme(axis.text.x = element_blank(),
+        axis.title.x = element_blank()) + labs(title = "ILC2", y=ggg),
+
+ggplot(vln_df.SI_ILC3_A %>% filter(Anno == "ILC3_A"), aes(x = Sample,fill=Sample, y= get(ggg))) +
+  geom_violin(draw_quantiles=c(0.25,0.75),trim = T, scale = "width") +
+  ggbeeswarm::geom_quasirandom(size = 0.01, width = 0.2, alpha = 0.3) +
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="black") +
+    ggpubr::stat_compare_means(aes(lable = ..p.signif..), 
+                               method = "wilcox.test",
+                               comparisons = list(c("SI_CTL","SI_CKO"),
+                                                  c("LI_CTL","LI_CKO"),
+                                                  c("SI_CTL","LI_CTL"),
+                                                  c("SI_CKO","LI_CKO")),
+                               label.y = c(5.5,5.5,6,6.5),
+                               size=2.5) +
+  theme_classic() +  scale_fill_manual(values = c("#7CAE00","#F8766D","#00BFC4","#C77CFF")) +
+  theme(axis.text.x = element_blank(),
+        axis.title.x = element_blank()) + labs(title = "ILC3_A", y=ggg),
+
+ggplot(vln_df.SI_ILC3_A %>% filter(Anno == "ILC3_B"), aes(x = Sample,fill=Sample, y= get(ggg))) +
+  geom_violin(draw_quantiles=c(0.25,0.75),trim = T, scale = "width") +
+  ggbeeswarm::geom_quasirandom(size = 0.01, width = 0.2, alpha = 0.3) +
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="black") +
+    ggpubr::stat_compare_means(aes(lable = ..p.signif..), 
+                               method = "wilcox.test",
+                               comparisons = list(c("SI_CTL","SI_CKO"),
+                                                  c("LI_CTL","LI_CKO"),
+                                                  c("SI_CTL","LI_CTL"),
+                                                  c("SI_CKO","LI_CKO")),
+                               label.y = c(5.5,5.5,6,6.5),
+                               size=2.5) +
+  theme_classic() +  scale_fill_manual(values = c("#7CAE00","#F8766D","#00BFC4","#C77CFF")) +
+  theme(axis.text.x = element_blank(),
+        axis.title.x = element_blank()) + labs(title = "ILC3_B", y=ggg),
+ncol = 2))
+}
+```
+
+```{r}
+vln_df.SI_ILC3 <- data.frame(t(GEX.seur@assays$RNA@data[c(markers.anno_inflam$ILC3,"Ncr1","Il17a"),]),
+                     Sample=GEX.seur$SP.info,
+                     Anno=GEX.seur$Anno2,check.names = F)
+dim(vln_df.SI_ILC3)
+```
+
+```{r eval=FALSE, include=FALSE}
+for(ggg in c(markers.anno_inflam$ILC3,"Ncr1")){
+  ggsave(paste0("./adv0510_steady/ILC3_markers/markers.ILC3_.",ggg,".png"),
+         width = 9, height = 6,
+         plot = cowplot::plot_grid(
+ggplot(vln_df.SI_ILC3 %>% filter(Anno == "ILC1"), aes(x = Sample,fill=Sample, y= get(ggg))) +
+  geom_violin(draw_quantiles=c(0.25,0.75),trim = T, scale = "width") +
+  ggbeeswarm::geom_quasirandom(size = 0.01, width = 0.2, alpha = 0.3) +
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="black") +
+    ggpubr::stat_compare_means(aes(lable = ..p.signif..), 
+                               method = "wilcox.test",
+                               comparisons = list(c("SI_CTL","SI_CKO"),
+                                                  c("LI_CTL","LI_CKO"),
+                                                  c("SI_CTL","LI_CTL"),
+                                                  c("SI_CKO","LI_CKO")),
+                               label.y = c(5.5,5.5,6,6.5),
+                               size=2.5) +
+  theme_classic() + scale_fill_manual(values = c("#7CAE00","#F8766D","#00BFC4","#C77CFF")) +
+  theme(axis.text.x = element_blank(),
+        axis.title.x = element_blank()) + labs(title = "ILC1", y=ggg),
+
+ggplot(vln_df.SI_ILC3 %>% filter(Anno == "ILC2"), aes(x = Sample,fill=Sample, y= get(ggg))) +
+  geom_violin(draw_quantiles=c(0.25,0.75),trim = T, scale = "width") +
+  ggbeeswarm::geom_quasirandom(size = 0.01, width = 0.2, alpha = 0.3) +
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="black") +
+    ggpubr::stat_compare_means(aes(lable = ..p.signif..), 
+                               method = "wilcox.test",
+                               comparisons = list(c("SI_CTL","SI_CKO"),
+                                                  c("LI_CTL","LI_CKO"),
+                                                  c("SI_CTL","LI_CTL"),
+                                                  c("SI_CKO","LI_CKO")),
+                               label.y = c(5.5,5.5,6,6.5),
+                               size=2.5) +
+  theme_classic() +  scale_fill_manual(values = c("#7CAE00","#F8766D","#00BFC4","#C77CFF")) +
+  theme(axis.text.x = element_blank(),
+        axis.title.x = element_blank()) + labs(title = "ILC2", y=ggg),
+
+ggplot(vln_df.SI_ILC3 %>% filter(Anno == "ILC3_A"), aes(x = Sample,fill=Sample, y= get(ggg))) +
+  geom_violin(draw_quantiles=c(0.25,0.75),trim = T, scale = "width") +
+  ggbeeswarm::geom_quasirandom(size = 0.01, width = 0.2, alpha = 0.3) +
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="black") +
+    ggpubr::stat_compare_means(aes(lable = ..p.signif..), 
+                               method = "wilcox.test",
+                               comparisons = list(c("SI_CTL","SI_CKO"),
+                                                  c("LI_CTL","LI_CKO"),
+                                                  c("SI_CTL","LI_CTL"),
+                                                  c("SI_CKO","LI_CKO")),
+                               label.y = c(5.5,5.5,6,6.5),
+                               size=2.5) +
+  theme_classic() +  scale_fill_manual(values = c("#7CAE00","#F8766D","#00BFC4","#C77CFF")) +
+  theme(axis.text.x = element_blank(),
+        axis.title.x = element_blank()) + labs(title = "ILC3_A", y=ggg),
+
+ggplot(vln_df.SI_ILC3 %>% filter(Anno == "ILC3_B"), aes(x = Sample,fill=Sample, y= get(ggg))) +
+  geom_violin(draw_quantiles=c(0.25,0.75),trim = T, scale = "width") +
+  ggbeeswarm::geom_quasirandom(size = 0.01, width = 0.2, alpha = 0.3) +
+    stat_summary(fun=mean, geom="point", shape=18, size=3, color="black") +
+    ggpubr::stat_compare_means(aes(lable = ..p.signif..), 
+                               method = "wilcox.test",
+                               comparisons = list(c("SI_CTL","SI_CKO"),
+                                                  c("LI_CTL","LI_CKO"),
+                                                  c("SI_CTL","LI_CTL"),
+                                                  c("SI_CKO","LI_CKO")),
+                               label.y = c(5.5,5.5,6,6.5),
+                               size=2.5) +
+  theme_classic() +  scale_fill_manual(values = c("#7CAE00","#F8766D","#00BFC4","#C77CFF")) +
+  theme(axis.text.x = element_blank(),
+        axis.title.x = element_blank()) + labs(title = "ILC3_B", y=ggg),
+ncol = 2))
+}
+```
+
+#### LI           
+
+```{r paged.print=FALSE}
+DEGs_LI.df %>% filter(p_val_adj < 0.05)
+```
+
+
+```{r fig.width=8.1, fig.height=3.7}
+DotPlot(GEX.seur, features = rev((DEGs_LI.df %>% filter(p_val_adj < 0.05) %>% filter(Anno2=="ILC1"))$gene), group.by = "SP.anno")  + coord_flip() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 9.6)) + labs(title = "DEGs of LI ILC1")
+``` 
+
+```{r fig.width=8.1, fig.height=3.5}
+DotPlot(GEX.seur, features = rev((DEGs_LI.df %>% filter(p_val_adj < 0.05) %>% filter(Anno2=="ILC3_A"))$gene), group.by = "SP.anno")  + coord_flip() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 9.6)) + labs(title = "DEGs of LI ILC3_A")
+``` 
+
+```{r fig.width=8.1, fig.height=3.5}
+DotPlot(GEX.seur, features = rev((DEGs_LI.df %>% filter(p_val_adj < 0.05) %>% filter(Anno2=="ILC3_B"))$gene), group.by = "SP.anno")  + coord_flip() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 9.6)) + labs(title = "DEGs of LI ILC3_B")
+``` 
+
+```{r fig.width=8.1, fig.height=6.5}
+DotPlot(GEX.seur, features = rev((DEGs_LI.df %>% filter(p_val_adj < 0.05) %>% filter(Anno2=="ILC2"))$gene), group.by = "SP.anno")  + coord_flip() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 9.6)) + labs(title = "DEGs of LI ILC2")
+``` 
+
+
+```{r}
+markers.anno <- list(NK=c("Ptprc","Klrb1c","Ncr1","Tbx21","Ifng","Eomes"),
+                     ILC1=c("Nkg7","Ccl4"),
+                     ILC3=c("Rorc","Cd93","Kcnk1","Ncoa7","Il1r1","Il22","Tnfsf11","Prr29",
+                            "Serpinb1a","Irf7","Ccr6","Cdc14a","Hmgn3","Cx3cl1","Nmrk1",
+                            "Ccr1","Platr3","Tgm3","Kdm4a"),
+                     ILC2=c("Gata3","Il1rl1","Calca","Areg",
+                            "Il2ra","Il13","Il4","Il5","Klrg1","Csf2","Inpp4b","Penk"),
+                     DrdX=paste0("Drd",1:5))
+length(unlist(markers.anno))
+```
+
+```{r fig.width=5.6, fig.height=6.6}
+DotPlot(GEX.seur, features = rev(as.vector(unlist(markers.anno))), group.by = "Anno1")  + coord_flip() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 9.6))
+DotPlot(GEX.seur, features = rev(as.vector(unlist(markers.anno))), group.by = "Anno2")  + coord_flip() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 9.6))
+``` 
+
+```{r}
+head(GEX.seur@meta.data)
+```
+
+
+```{r}
+VlnPlot(GEX.seur, features = "Drd4",group.by = "Anno1") + NoLegend()
+VlnPlot(GEX.seur, features = "Penk",group.by = "Anno1") + NoLegend()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
